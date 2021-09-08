@@ -535,11 +535,7 @@ func (net *Network) generateDeterministicIdentity(dir *env.Dir, rawSeed string, 
 }
 
 func (net *Network) generateDeterministicNodeIdentity(dir *env.Dir, rawSeed string) error {
-	return net.generateDeterministicIdentity(dir, rawSeed, []signature.SignerRole{
-		signature.SignerNode,
-		signature.SignerP2P,
-		signature.SignerConsensus,
-	})
+	return net.generateDeterministicIdentity(dir, rawSeed, identity.RequiredSignerRoles)
 }
 
 // GenerateDeterministicNodeKeys generates and returns deterministic node keys.
@@ -873,7 +869,7 @@ func (net *Network) provisionNodeIdentity(dataDir *env.Dir, seed string, persist
 		}
 	}
 
-	signerFactory, err := fileSigner.NewFactory(dataDir.String(), signature.SignerNode, signature.SignerP2P, signature.SignerConsensus)
+	signerFactory, err := fileSigner.NewFactory(dataDir.String(), identity.RequiredSignerRoles...)
 	if err != nil {
 		return signature.PublicKey{}, signature.PublicKey{}, nil, fmt.Errorf("oasis: failed to create node file signer factory: %w", err)
 	}

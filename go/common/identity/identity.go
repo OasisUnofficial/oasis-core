@@ -29,6 +29,9 @@ const (
 	// public key.
 	ConsensusKeyPubFilename = "consensus_pub.pem"
 
+	// VRFKeyPubFilename is the filename of the PEM encoded node VRF public key.
+	VRFKeyPubFilename = "vrf_pub.pem"
+
 	// CommonName is the CommonName to use when generating TLS certificates.
 	CommonName = "oasis-node"
 
@@ -48,11 +51,22 @@ const (
 	tlsSentryClientCertFilename = "sentry_client_tls_identity_cert.pem"
 )
 
-// ErrCertificateRotationForbidden is returned by RotateCertificates if
-// TLS certificate rotation is forbidden.  This happens when rotation is
-// enabled and an existing TLS certificate was successfully loaded
-// (or a new one was generated and persisted to disk).
-var ErrCertificateRotationForbidden = errors.New("identity", 1, "identity: TLS certificate rotation forbidden")
+var (
+	// ErrCertificateRotationForbidden is returned by RotateCertificates if
+	// TLS certificate rotation is forbidden.  This happens when rotation is
+	// enabled and an existing TLS certificate was successfully loaded
+	// (or a new one was generated and persisted to disk).
+	ErrCertificateRotationForbidden = errors.New("identity", 1, "identity: TLS certificate rotation forbidden")
+
+	// RequiredSignerRoles is the required signer roles needed to load or
+	// provision a node identity.
+	RequiredSignerRoles = []signature.SignerRole{
+		signature.SignerNode,
+		signature.SignerP2P,
+		signature.SignerConsensus,
+		signature.SignerVRF,
+	}
+)
 
 // Identity is a node identity.
 type Identity struct {
@@ -64,6 +78,8 @@ type Identity struct {
 	P2PSigner signature.Signer
 	// ConsensusSigner is a node consensus key signer.
 	ConsensusSigner signature.Signer
+	// VRFSigner is a node VRF key signer.
+	VRFSigner signature.Signer
 	// BeaconScalar is a node beacon scalar.
 	BeaconScalar pvss.Scalar
 
@@ -231,6 +247,7 @@ func doLoadOrGenerate(dataDir string, signerFactory signature.SignerFactory, sho
 		{signature.SignerNode, NodeKeyPubFilename},
 		{signature.SignerP2P, P2PKeyPubFilename},
 		{signature.SignerConsensus, ConsensusKeyPubFilename},
+		{signature.SignerVRF, VRFKeyPubFilename},
 	} {
 		signer, err := signerFactory.Load(v.role)
 		switch err {
@@ -350,6 +367,7 @@ func doLoadOrGenerate(dataDir string, signerFactory signature.SignerFactory, sho
 		NodeSigner:                 signers[0],
 		P2PSigner:                  signers[1],
 		ConsensusSigner:            signers[2],
+		VRFSigner:                  signers[3],
 		BeaconScalar:               beaconScalar,
 		tlsSigner:                  memory.NewFromRuntime(cert.PrivateKey.(ed25519.PrivateKey)),
 		tlsCertificate:             cert,

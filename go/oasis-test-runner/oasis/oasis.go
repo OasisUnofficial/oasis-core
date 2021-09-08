@@ -176,7 +176,7 @@ func (n *Node) DataDir() string {
 
 // LoadIdentity loads the node's identity.
 func (n *Node) LoadIdentity() (*identity.Identity, error) {
-	factory, err := fileSigner.NewFactory(n.dir.String(), signature.SignerNode, signature.SignerP2P, signature.SignerConsensus)
+	factory, err := fileSigner.NewFactory(n.dir.String(), identity.RequiredSignerRoles...)
 	if err != nil {
 		return nil, err
 	}
