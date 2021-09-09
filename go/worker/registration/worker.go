@@ -729,6 +729,9 @@ func (w *Worker) registerNode(epoch beacon.EpochTime, hook RegisterNodeHook) err
 		Consensus: node.ConsensusInfo{
 			ID: w.identity.ConsensusSigner.Public(),
 		},
+		VRF: &node.VRFInfo{
+			ID: w.identity.VRFSigner.Public(),
+		},
 		Beacon: &node.BeaconInfo{
 			Point: w.identity.BeaconScalar.Point(),
 		},
@@ -780,6 +783,7 @@ func (w *Worker) registerNode(epoch beacon.EpochTime, hook RegisterNodeHook) err
 		w.registrationSigner,
 		w.identity.P2PSigner,
 		w.identity.ConsensusSigner,
+		w.identity.VRFSigner,
 		w.identity.GetTLSSigner(),
 	}
 	if !w.identity.NodeSigner.Public().Equal(w.registrationSigner.Public()) {

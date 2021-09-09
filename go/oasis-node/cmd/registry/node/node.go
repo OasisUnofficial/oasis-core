@@ -160,6 +160,9 @@ func doInit(cmd *cobra.Command, args []string) { // nolint: gocyclo
 		Consensus: node.ConsensusInfo{
 			ID: nodeIdentity.ConsensusSigner.Public(),
 		},
+		VRF: &node.VRFInfo{
+			ID: nodeIdentity.VRFSigner.Public(),
+		},
 		Beacon: &node.BeaconInfo{
 			Point: nodeIdentity.BeaconScalar.Point(),
 		},
@@ -245,6 +248,7 @@ func doInit(cmd *cobra.Command, args []string) { // nolint: gocyclo
 		nodeIdentity.NodeSigner,
 		nodeIdentity.P2PSigner,
 		nodeIdentity.ConsensusSigner,
+		nodeIdentity.VRFSigner,
 		nodeIdentity.GetTLSSigner(),
 	}
 

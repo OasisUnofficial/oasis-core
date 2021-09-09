@@ -1048,8 +1048,10 @@ func randomIdentity(rng *drbg.Drbg) *identity.Identity {
 		NodeSigner:      mustGenerateSigner(),
 		P2PSigner:       mustGenerateSigner(),
 		ConsensusSigner: mustGenerateSigner(),
+		VRFSigner:       mustGenerateSigner(),
 		BeaconScalar:    mustGenerateScalar(),
 	}
+	ident.VRFSigner.(*memorySigner.Signer).UnsafeSetRole(signature.SignerVRF)
 
 	cert, err := tls.Generate(identity.CommonName)
 	if err != nil {
@@ -1080,6 +1082,7 @@ func (ent *TestEntity) NewTestNodes(nCompute, nStorage int, idNonce []byte, runt
 			nodeIdentity.NodeSigner,
 			nodeIdentity.P2PSigner,
 			nodeIdentity.ConsensusSigner,
+			nodeIdentity.VRFSigner,
 			nodeIdentity.GetTLSSigner(),
 		}
 		invalidIdentity := randomIdentity(rng)
@@ -1100,6 +1103,9 @@ func (ent *TestEntity) NewTestNodes(nCompute, nStorage int, idNonce []byte, runt
 			ID:         nod.Signer.Public(),
 			EntityID:   ent.Entity.ID,
 			Expiration: uint64(expiration),
+			VRF: &node.VRFInfo{
+				ID: nodeIdentity.VRFSigner.Public(),
+			},
 			Beacon: &node.BeaconInfo{
 				Point: nodeIdentity.BeaconScalar.Point(),
 			},
@@ -1169,6 +1175,7 @@ func (ent *TestEntity) NewTestNodes(nCompute, nStorage int, idNonce []byte, runt
 				nodeIdentity.NodeSigner,
 				nodeIdentity.P2PSigner,
 				nodeIdentity.ConsensusSigner,
+				nodeIdentity.VRFSigner,
 			},
 			api.RegisterNodeSignatureContext,
 			&invNode3,
@@ -1213,6 +1220,7 @@ func (ent *TestEntity) NewTestNodes(nCompute, nStorage int, idNonce []byte, runt
 				[]signature.Signer{
 					nodeIdentity.NodeSigner,
 					nodeIdentity.ConsensusSigner,
+					nodeIdentity.VRFSigner,
 					nodeIdentity.GetTLSSigner(),
 				},
 				api.RegisterNodeSignatureContext,
@@ -1277,6 +1285,7 @@ func (ent *TestEntity) NewTestNodes(nCompute, nStorage int, idNonce []byte, runt
 			[]signature.Signer{
 				nodeIdentity.NodeSigner,
 				nodeIdentity.P2PSigner,
+				nodeIdentity.VRFSigner,
 				nodeIdentity.GetTLSSigner(),
 			},
 			api.RegisterNodeSignatureContext,
@@ -1300,6 +1309,7 @@ func (ent *TestEntity) NewTestNodes(nCompute, nStorage int, idNonce []byte, runt
 				invalidIdentity.NodeSigner,
 				invalidIdentity.ConsensusSigner,
 				nodeIdentity.P2PSigner,
+				invalidIdentity.VRFSigner,
 				invalidIdentity.GetTLSSigner(),
 			},
 			api.RegisterNodeSignatureContext,
@@ -1323,6 +1333,7 @@ func (ent *TestEntity) NewTestNodes(nCompute, nStorage int, idNonce []byte, runt
 				invalidIdentity.NodeSigner,
 				nodeIdentity.ConsensusSigner,
 				invalidIdentity.P2PSigner,
+				invalidIdentity.VRFSigner,
 				invalidIdentity.GetTLSSigner(),
 			},
 			api.RegisterNodeSignatureContext,
@@ -1346,6 +1357,7 @@ func (ent *TestEntity) NewTestNodes(nCompute, nStorage int, idNonce []byte, runt
 				invalidIdentity.NodeSigner,
 				invalidIdentity.ConsensusSigner,
 				invalidIdentity.P2PSigner,
+				invalidIdentity.VRFSigner,
 				nodeIdentity.GetTLSSigner(),
 			},
 			api.RegisterNodeSignatureContext,
@@ -1386,6 +1398,7 @@ func (ent *TestEntity) NewTestNodes(nCompute, nStorage int, idNonce []byte, runt
 			Expiration: uint64(expiration),
 			Runtimes:   moreRuntimes,
 			Roles:      role,
+			VRF:        nod.Node.VRF,
 		}
 		addr = node.Address{
 			TCPAddr: net.TCPAddr{
@@ -1423,12 +1436,16 @@ func (ent *TestEntity) NewTestNodes(nCompute, nStorage int, idNonce []byte, runt
 		}
 		newNode.P2P.ID = invalidIdentity.P2PSigner.Public()
 		newNode.Consensus.ID = invalidIdentity.ConsensusSigner.Public()
+		newNode.VRF = &node.VRFInfo{
+			ID: invalidIdentity.VRFSigner.Public(),
+		}
 		newNode.TLS.PubKey = invalidIdentity.GetTLSSigner().Public()
 		invalid14.signed, err = node.MultiSignNode(
 			[]signature.Signer{
 				nodeIdentity.NodeSigner,
 				invalidIdentity.ConsensusSigner,
 				invalidIdentity.P2PSigner,
+				invalidIdentity.VRFSigner,
 				invalidIdentity.GetTLSSigner(),
 			},
 			api.RegisterNodeSignatureContext,
@@ -1450,6 +1467,7 @@ func (ent *TestEntity) NewTestNodes(nCompute, nStorage int, idNonce []byte, runt
 				nodeIdentity.NodeSigner,
 				nodeIdentity.ConsensusSigner,
 				nodeIdentity.P2PSigner,
+				nodeIdentity.VRFSigner,
 				nodeIdentity.GetTLSSigner(),
 			},
 			api.RegisterNodeSignatureContext,

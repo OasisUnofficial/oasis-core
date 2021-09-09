@@ -80,11 +80,14 @@ type Node struct { // nolint: maligned
 	// consensus member.
 	Consensus ConsensusInfo `json:"consensus"`
 
+	// VRF contains information for this node's participation in VRF
+	// based elections.
+	VRF *VRFInfo `json:"vrf,omitempty"`
+
 	// Beacon contains information for this node's participation
 	// in the random beacon protocol.
 	//
-	// TODO: This is optional for now, make mandatory once enough
-	// nodes provide this field.
+	// TODO: Deprecate once everyone is using VRFs.
 	Beacon *BeaconInfo `json:"beacon,omitempty"`
 
 	// Runtimes are the node's runtimes.
@@ -372,6 +375,13 @@ type ConsensusInfo struct {
 type BeaconInfo struct {
 	// Point is the elliptic curve point used for the PVSS algorithm.
 	Point pvss.Point `json:"point"`
+}
+
+// VRFInfo contains information for this node's participation in
+// VRF based elections.
+type VRFInfo struct {
+	// ID is the unique identifier of the node used to generate VRF proofs.
+	ID signature.PublicKey `json:"id"`
 }
 
 // Capabilities represents a node's capabilities.

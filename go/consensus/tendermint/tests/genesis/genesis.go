@@ -155,6 +155,9 @@ func NewTestNodeGenesisProvider(identity *identity.Identity, ent *entity.Entity,
 				},
 			},
 		},
+		VRF: &node.VRFInfo{
+			ID: identity.VRFSigner.Public(),
+		},
 		Beacon: &node.BeaconInfo{
 			Point: identity.BeaconScalar.Point(),
 		},
@@ -164,6 +167,7 @@ func NewTestNodeGenesisProvider(identity *identity.Identity, ent *entity.Entity,
 		identity.NodeSigner,
 		identity.P2PSigner,
 		identity.ConsensusSigner,
+		identity.VRFSigner,
 		identity.GetTLSSigner(),
 	}
 	signed, err := node.MultiSignNode(signers, registry.RegisterGenesisNodeSignatureContext, n)
