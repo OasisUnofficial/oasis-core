@@ -559,7 +559,7 @@ func (s *MutableState) RemoveEntity(ctx context.Context, id signature.PublicKey)
 }
 
 // SetNode sets a signed node descriptor for a registered node.
-func (s *MutableState) SetNode(ctx context.Context, existingNode, node *node.Node, signedNode *node.MultiSignedNode) error {
+func (s *MutableState) SetNode(ctx context.Context, existingNode, node *node.Node, signedNode *node.MultiSignedNode) error { //nolint: gocyclo
 	rawNodeID, err := node.ID.MarshalBinary()
 	if err != nil {
 		return err
@@ -602,6 +602,21 @@ func (s *MutableState) SetNode(ctx context.Context, existingNode, node *node.Nod
 	}
 	if err = s.ms.Insert(ctx, keyMapKeyFmt.Encode(&node.P2P.ID), rawNodeID); err != nil {
 		return abciAPI.UnavailableStateError(err)
+	}
+
+	// VRF key.
+	if existingNode != nil && existingNode.VRF != nil {
+		// Remove old VRF key if it has changed.
+		if node.VRF == nil || !existingNode.VRF.ID.Equal(node.VRF.ID) {
+			if err = s.ms.Remove(ctx, keyMapKeyFmt.Encode(&existingNode.VRF.ID)); err != nil {
+				return abciAPI.UnavailableStateError(err)
+			}
+		}
+	}
+	if node.VRF != nil {
+		if err = s.ms.Insert(ctx, keyMapKeyFmt.Encode(&node.VRF.ID), rawNodeID); err != nil {
+			return abciAPI.UnavailableStateError(err)
+		}
 	}
 
 	// Committee TLS key.
@@ -658,6 +673,12 @@ func (s *MutableState) RemoveNode(ctx context.Context, node *node.Node) error {
 	}
 	if err := s.ms.Remove(ctx, keyMapKeyFmt.Encode(&node.TLS.PubKey)); err != nil {
 		return abciAPI.UnavailableStateError(err)
+	}
+
+	if node.VRF != nil {
+		if err := s.ms.Remove(ctx, keyMapKeyFmt.Encode(&node.VRF.ID)); err != nil {
+			return abciAPI.UnavailableStateError(err)
+		}
 	}
 
 	if node.Beacon != nil {
