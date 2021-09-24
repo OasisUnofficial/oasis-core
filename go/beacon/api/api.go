@@ -26,6 +26,9 @@ const (
 
 	// BackendPVSS is the name of the PVSS backend.
 	BackendPVSS = "pvss"
+
+	// BackendVRF is the name of the VRF backend.
+	BackendVRF = "vrf"
 )
 
 // ErrBeaconNotAvailable is the error returned when a beacon is not
@@ -137,6 +140,9 @@ type ConsensusParameters struct {
 
 	// PVSSParameters are the beacon parameters for the PVSS backend.
 	PVSSParameters *PVSSParameters `json:"pvss_parameters,omitempty"`
+
+	// VRFParamenters are the beacon parameters for the VRF backend.
+	VRFParameters *VRFParameters `json:"vrf_parameters,omitempty"`
 }
 
 // InsecureParameters are the beacon parameters for the insecure backend.
@@ -184,6 +190,24 @@ func (g *Genesis) SanityCheck() error {
 		}
 		if len(params.DebugForcedParticipants) > 0 && !flags.DebugDontBlameOasis() {
 			return fmt.Errorf("beacon: sanity check failed: PVSS forced participants set")
+		}
+	case BackendVRF:
+		params := g.Parameters.VRFParameters
+		if params == nil {
+			return fmt.Errorf("beacon: sanity check failed: VRF backend not configured")
+		}
+
+		if params.AlphaHighQualityThreshold == 0 {
+			return fmt.Errorf("beacon: sanity check failed: alpha threshold must be > 0")
+		}
+		if params.Interval <= 0 {
+			return fmt.Errorf("beacon: sanity check failed: epoch interval must be > 0")
+		}
+		if params.ProofSubmissionDelay <= 0 {
+			return fmt.Errorf("beacon: sanity check failed: submission delay must be > 0")
+		}
+		if params.ProofSubmissionDelay >= params.Interval {
+			return fmt.Errorf("beacon: sanity check failed: submission delay must be < epoch interval")
 		}
 	default:
 		return fmt.Errorf("beacon: sanity check failed: unknown backend: '%s'", g.Parameters.Backend)

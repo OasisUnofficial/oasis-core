@@ -6,6 +6,7 @@ import (
 
 	requirePkg "github.com/stretchr/testify/require"
 
+	beacon "github.com/oasisprotocol/oasis-core/go/beacon/api"
 	"github.com/oasisprotocol/oasis-core/go/common"
 	"github.com/oasisprotocol/oasis-core/go/common/cbor"
 	"github.com/oasisprotocol/oasis-core/go/common/crypto/signature"
@@ -14,6 +15,7 @@ import (
 	"github.com/oasisprotocol/oasis-core/go/common/node"
 	"github.com/oasisprotocol/oasis-core/go/common/quantity"
 	abciAPI "github.com/oasisprotocol/oasis-core/go/consensus/tendermint/api"
+	beaconState "github.com/oasisprotocol/oasis-core/go/consensus/tendermint/apps/beacon/state"
 	registryState "github.com/oasisprotocol/oasis-core/go/consensus/tendermint/apps/registry/state"
 	stakingState "github.com/oasisprotocol/oasis-core/go/consensus/tendermint/apps/staking/state"
 	registry "github.com/oasisprotocol/oasis-core/go/registry/api"
@@ -33,6 +35,7 @@ func TestRegisterNode(t *testing.T) {
 	app := registryApplication{appState, &md}
 	state := registryState.NewMutableState(ctx.State())
 	stakeState := stakingState.NewMutableState(ctx.State())
+	beaconState := beaconState.NewMutableState(ctx.State())
 
 	// Set up default staking consensus parameters.
 	defaultStakeParameters := staking.ConsensusParameters{
@@ -46,11 +49,18 @@ func TestRegisterNode(t *testing.T) {
 			staking.KindRuntimeKeyManager: *quantity.NewFromUint64(0),
 		},
 	}
+
 	// Set up registry consensus parameters.
 	err := state.SetConsensusParameters(ctx, &registry.ConsensusParameters{
 		MaxNodeExpiration: 5,
 	})
 	require.NoError(err, "registry.SetConsensusParameters")
+
+	// Setup beacon consensus parameters.
+	err = beaconState.SetConsensusParameters(ctx, &beacon.ConsensusParameters{
+		Backend: beacon.BackendInsecure,
+	})
+	require.NoError(err, "beacon.SetConsensusParameters")
 
 	// Store all successful registrations in a map for easier reference in later test cases.
 	type testCaseData struct {

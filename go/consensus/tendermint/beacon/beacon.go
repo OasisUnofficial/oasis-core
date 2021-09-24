@@ -5,6 +5,7 @@ package beacon
 import (
 	"bytes"
 	"context"
+	"encoding/hex"
 	"fmt"
 	"sync"
 
@@ -51,6 +52,10 @@ type serviceClient struct {
 	pvssNotifier     *pubsub.Broker
 	pvssLastNotified hash.Hash
 	pvssEvent        *beaconAPI.PVSSEvent
+
+	vrfNotifier     *pubsub.Broker
+	vrfLastNotified hash.Hash
+	vrfEvent        *beaconAPI.VRFEvent
 
 	initialNotify bool
 
@@ -210,6 +215,23 @@ func (sc *serviceClient) WatchLatestPVSSEvent(ctx context.Context) (<-chan *beac
 	return typedCh, sub, nil
 }
 
+func (sc *serviceClient) GetVRFState(ctx context.Context, height int64) (*beaconAPI.VRFState, error) {
+	q, err := sc.querier.QueryAt(ctx, height)
+	if err != nil {
+		return nil, err
+	}
+
+	return q.VRFState(ctx)
+}
+
+func (sc *serviceClient) WatchLatestVRFEvent(ctx context.Context) (<-chan *beaconAPI.VRFEvent, *pubsub.Subscription, error) {
+	typedCh := make(chan *beaconAPI.VRFEvent)
+	sub := sc.vrfNotifier.Subscribe()
+	sub.Unwrap(typedCh)
+
+	return typedCh, sub, nil
+}
+
 func (sc *serviceClient) SetEpoch(ctx context.Context, epoch beaconAPI.EpochTime) error {
 	ch, sub, err := sc.WatchEpochs(ctx)
 	if err != nil {
@@ -277,6 +299,20 @@ func (sc *serviceClient) DeliverBlock(ctx context.Context, height int64) error {
 		}
 	}
 
+	var vrfState *beaconAPI.VRFState
+	vrfState, err = q.VRFState(ctx)
+	if err != nil {
+		return fmt.Errorf("beacon: failed to query VRF state: %w", err)
+	}
+	if vrfState != nil {
+		var event beaconAPI.VRFEvent
+		event.FromState(vrfState)
+
+		if sc.updateCachedVRFEvent(&event) {
+			sc.vrfNotifier.Broadcast(&event)
+		}
+	}
+
 	sc.initialNotify = true
 	return nil
 }
@@ -306,6 +342,18 @@ func (sc *serviceClient) DeliverEvent(ctx context.Context, height int64, tx tmty
 			}
 			if sc.updateCachedPVSSEvent(&event) {
 				sc.pvssNotifier.Broadcast(&event)
+			}
+		}
+		if tmAPI.IsAttributeKind(pair.GetKey(), &beaconAPI.VRFEvent{}) {
+			var event beaconAPI.VRFEvent
+			if err := cbor.Unmarshal(pair.GetValue(), &event); err != nil {
+				sc.logger.Error("beacon: malformed VRF event",
+					"err", err,
+				)
+				continue
+			}
+			if sc.updateCachedVRFEvent(&event) {
+				sc.vrfNotifier.Broadcast(&event)
 			}
 		}
 	}
@@ -352,6 +400,26 @@ func (sc *serviceClient) updateCachedPVSSEvent(event *beaconAPI.PVSSEvent) bool 
 	return false
 }
 
+func (sc *serviceClient) updateCachedVRFEvent(event *beaconAPI.VRFEvent) bool {
+	sc.Lock()
+	defer sc.Unlock()
+
+	sc.vrfEvent = event
+	cmp := hash.NewFrom(event)
+
+	if !cmp.Equal(&sc.vrfLastNotified) {
+		sc.logger.Debug("VRF round event",
+			"epoch", event.Epoch,
+			"alpha", hex.EncodeToString(event.Alpha),
+			"submit_after", event.SubmitAfter,
+		)
+		sc.vrfLastNotified = cmp
+		return true
+	}
+
+	return false
+}
+
 func (sc *serviceClient) currentEpochBlock() (beaconAPI.EpochTime, int64) {
 	sc.RLock()
 	defer sc.RUnlock()
@@ -387,6 +455,14 @@ func New(ctx context.Context, backend tmAPI.Backend) (ServiceClient, error) {
 
 		if sc.pvssEvent != nil {
 			ch.In() <- sc.pvssEvent
+		}
+	})
+	sc.vrfNotifier = pubsub.NewBrokerEx(func(ch channels.Channel) {
+		sc.RLock()
+		defer sc.RUnlock()
+
+		if sc.vrfEvent != nil {
+			ch.In() <- sc.vrfEvent
 		}
 	})
 

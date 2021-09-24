@@ -52,6 +52,8 @@ func (app *beaconApplication) doInitBackend(params *beacon.ConsensusParameters) 
 		app.backend = &backendInsecure{app}
 	case beacon.BackendPVSS:
 		app.backend = &backendPVSS{app}
+	case beacon.BackendVRF:
+		app.backend = &backendVRF{app}
 	default:
 		return fmt.Errorf("beacon: unsupported backend: '%s'", backendName)
 	}

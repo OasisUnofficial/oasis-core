@@ -41,6 +41,7 @@ var (
 		MethodSetEpoch,
 		beacon.MethodPVSSCommit,
 		beacon.MethodPVSSReveal,
+		beacon.MethodVRFProve,
 	}
 )
 
