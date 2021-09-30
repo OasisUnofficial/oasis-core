@@ -16,6 +16,7 @@ const workerName = "worker/beacon"
 
 type Worker struct {
 	pvss *pvssWorker
+	vrf  *vrfWorker
 
 	ctx context.Context
 
@@ -32,6 +33,11 @@ func (w *Worker) Start() error {
 			return fmt.Errorf("worker/beacon: failed to start PVSS worker: %w", err)
 		}
 	}
+	if w.vrf != nil {
+		if err := w.vrf.Start(); err != nil {
+			return fmt.Errorf("worker/beacon: failed to start VRF worker: %w", err)
+		}
+	}
 
 	return nil
 }
@@ -39,6 +45,9 @@ func (w *Worker) Start() error {
 func (w *Worker) Stop() {
 	if w.pvss != nil {
 		w.pvss.Stop()
+	}
+	if w.vrf != nil {
+		w.vrf.Stop()
 	}
 }
 
@@ -49,6 +58,9 @@ func (w *Worker) Quit() <-chan struct{} {
 func (w *Worker) Cleanup() {
 	if w.pvss != nil {
 		w.pvss.Cleanup()
+	}
+	if w.vrf != nil {
+		w.vrf.Cleanup()
 	}
 }
 
@@ -85,6 +97,19 @@ func New(
 		created = true
 	} else {
 		initLogger.Error("failed to initialize PVSS worker",
+			"err", err,
+		)
+	}
+	if w.vrf, err = newVRF(w); err == nil {
+		w.allQuitWg.Add(1)
+		go func() {
+			defer w.allQuitWg.Done()
+			<-w.vrf.Quit()
+		}()
+
+		created = true
+	} else {
+		initLogger.Error("failed to initialize VRF worker",
 			"err", err,
 		)
 	}
