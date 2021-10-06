@@ -1,7 +1,6 @@
 package oasis
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -11,14 +10,11 @@ import (
 
 	"github.com/oasisprotocol/oasis-core/go/common"
 	"github.com/oasisprotocol/oasis-core/go/common/cbor"
-	"github.com/oasisprotocol/oasis-core/go/common/crypto/hash"
 	"github.com/oasisprotocol/oasis-core/go/common/node"
 	"github.com/oasisprotocol/oasis-core/go/common/sgx"
 	"github.com/oasisprotocol/oasis-core/go/oasis-test-runner/env"
 	registry "github.com/oasisprotocol/oasis-core/go/registry/api"
 	scheduler "github.com/oasisprotocol/oasis-core/go/scheduler/api"
-	storage "github.com/oasisprotocol/oasis-core/go/storage/api"
-	"github.com/oasisprotocol/oasis-core/go/storage/mkvs"
 )
 
 const (
@@ -41,7 +37,6 @@ type Runtime struct { // nolint: maligned
 
 	excludeFromGenesis bool
 	descriptor         registry.Runtime
-	genesisState       string
 }
 
 // RuntimeCfg is the Oasis runtime provisioning configuration.
@@ -53,10 +48,8 @@ type RuntimeCfg struct { // nolint: maligned
 	TEEHardware node.TEEHardware
 	MrSigner    *sgx.MrSigner
 
-	Binaries         map[node.TEEHardware][]string
-	GenesisState     storage.WriteLog
-	GenesisStatePath string
-	GenesisRound     uint64
+	Binaries     map[node.TEEHardware][]string
+	GenesisRound uint64
 
 	Executor     registry.ExecutorParameters
 	TxnScheduler registry.TxnSchedulerParameters
@@ -170,46 +163,6 @@ func (net *Network) NewRuntime(cfg *RuntimeCfg) (*Runtime, error) {
 		return nil, fmt.Errorf("oasis/runtime: failed to create runtime subdir: %w", err)
 	}
 
-	genesisStatePath := cfg.GenesisStatePath
-	if cfg.GenesisState != nil && genesisStatePath != "" {
-		return nil, fmt.Errorf("oasis/runtime: inline genesis state and file genesis state set")
-	}
-
-	log := cfg.GenesisState
-
-	if genesisStatePath != "" {
-		var b []byte
-		b, err = ioutil.ReadFile(genesisStatePath)
-		if err != nil {
-			return nil, fmt.Errorf("failed to load runtime genesis storage state: %w", err)
-		}
-
-		if err = json.Unmarshal(b, &log); err != nil {
-			return nil, fmt.Errorf("failed to parse runtime genesis storage state: %w", err)
-		}
-	}
-	if log != nil {
-		descriptor.Genesis.Round = cfg.GenesisRound
-		// Use in-memory MKVS tree to calculate the new root.
-		tree := mkvs.New(nil, nil, storage.RootTypeState)
-		ctx := context.Background()
-		for _, logEntry := range log {
-			err = tree.Insert(ctx, logEntry.Key, logEntry.Value)
-			if err != nil {
-				return nil, fmt.Errorf("failed to apply runtime genesis storage state: %w", err)
-			}
-		}
-
-		var newRoot hash.Hash
-		_, newRoot, err = tree.Commit(ctx, descriptor.ID, descriptor.Genesis.Round)
-		if err != nil {
-			return nil, fmt.Errorf("failed to apply runtime genesis storage state: %w", err)
-		}
-
-		descriptor.Genesis.StateRoot = newRoot
-		descriptor.Genesis.State = log
-	}
-
 	if cfg.Keymanager != nil {
 		descriptor.KeyManager = new(common.Namespace)
 		*descriptor.KeyManager = cfg.Keymanager.id
@@ -225,7 +178,6 @@ func (net *Network) NewRuntime(cfg *RuntimeCfg) (*Runtime, error) {
 		pruner:             cfg.Pruner,
 		excludeFromGenesis: cfg.ExcludeFromGenesis,
 		descriptor:         descriptor,
-		genesisState:       genesisStatePath,
 	}
 
 	if err := rt.RefreshEnclaveIdentity(); err != nil {

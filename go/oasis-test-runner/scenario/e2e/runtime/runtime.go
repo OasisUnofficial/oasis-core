@@ -21,7 +21,6 @@ import (
 	runtimeClient "github.com/oasisprotocol/oasis-core/go/runtime/client/api"
 	scheduler "github.com/oasisprotocol/oasis-core/go/scheduler/api"
 	staking "github.com/oasisprotocol/oasis-core/go/staking/api"
-	"github.com/oasisprotocol/oasis-core/go/storage/database"
 )
 
 const (
@@ -184,12 +183,6 @@ func (sc *runtimeImpl) Fixture() (*oasis.NetworkFixture, error) {
 					BatchFlushTimeout: 1 * time.Second,
 					ProposerTimeout:   20,
 				},
-				Storage: registry.StorageParameters{
-					GroupSize:               2,
-					MinWriteReplication:     2,
-					MaxApplyWriteLogEntries: 100_000,
-					MaxApplyOps:             2,
-				},
 				AdmissionPolicy: registry.RuntimeAdmissionPolicy{
 					AnyNode: &registry.AnyNodeRuntimeAdmissionPolicy{},
 				},
@@ -203,13 +196,6 @@ func (sc *runtimeImpl) Fixture() (*oasis.NetworkFixture, error) {
 						scheduler.RoleBackupWorker: {
 							MinPoolSize: &registry.MinPoolSizeConstraint{
 								Limit: 1,
-							},
-						},
-					},
-					scheduler.KindStorage: {
-						scheduler.RoleWorker: {
-							MinPoolSize: &registry.MinPoolSizeConstraint{
-								Limit: 2,
 							},
 						},
 					},
@@ -227,10 +213,6 @@ func (sc *runtimeImpl) Fixture() (*oasis.NetworkFixture, error) {
 		},
 		Keymanagers: []oasis.KeymanagerFixture{
 			{Runtime: 0, Entity: 1},
-		},
-		StorageWorkers: []oasis.StorageWorkerFixture{
-			{Backend: database.BackendNameBadgerDB, Entity: 1},
-			{Backend: database.BackendNameBadgerDB, Entity: 1},
 		},
 		ComputeWorkers: []oasis.ComputeWorkerFixture{
 			{Entity: 1, Runtimes: []int{1}},
@@ -445,11 +427,6 @@ func (sc *runtimeImpl) waitNodesSynced() error {
 			return err
 		}
 	}
-	for _, n := range sc.Net.StorageWorkers() {
-		if err := checkSynced(n.Node); err != nil {
-			return err
-		}
-	}
 	for _, n := range sc.Net.ComputeWorkers() {
 		if err := checkSynced(n.Node); err != nil {
 			return err
@@ -502,19 +479,7 @@ func (sc *runtimeImpl) initialEpochTransitions(fixture *oasis.NetworkFixture) er
 		sc.Logger.Info("epoch transition done")
 	}
 
-	// Wait for storage workers and compute workers to become ready.
-	sc.Logger.Info("waiting for storage workers to initialize",
-		"num_storage_workers", len(sc.Net.StorageWorkers()),
-	)
-	for i, n := range sc.Net.StorageWorkers() {
-		if fixture.StorageWorkers[i].NoAutoStart {
-			// Skip nodes that don't auto start.
-			continue
-		}
-		if err := n.WaitReady(ctx); err != nil {
-			return fmt.Errorf("failed to wait for a storage worker: %w", err)
-		}
-	}
+	// Wait for compute workers to become ready.
 	sc.Logger.Info("waiting for compute workers to initialize",
 		"num_compute_workers", len(sc.Net.ComputeWorkers()),
 	)
@@ -561,24 +526,17 @@ func RegisterScenarios() error {
 		RuntimeEncryption,
 		RuntimeGovernance,
 		RuntimeMessage,
-		// Single node with multiple workers tests.
-		MultihostDouble,
-		MultihostTriple,
 		// Byzantine executor node.
 		ByzantineExecutorHonest,
 		ByzantineExecutorSchedulerHonest,
 		ByzantineExecutorWrong,
 		ByzantineExecutorSchedulerWrong,
+		ByzantineExecutorSchedulerBogus,
 		ByzantineExecutorStraggler,
 		ByzantineExecutorSchedulerStraggler,
 		ByzantineExecutorFailureIndicating,
 		ByzantineExecutorSchedulerFailureIndicating,
-		// Byzantine storage node.
-		ByzantineStorageHonest,
-		ByzantineStorageFailApply,
-		ByzantineStorageFailApplyBatch,
-		ByzantineStorageFailRead,
-		ByzantineStorageCorruptGetDiff,
+		ByzantineExecutorCorruptGetDiff,
 		// Storage sync test.
 		StorageSync,
 		StorageSyncFromRegistered,

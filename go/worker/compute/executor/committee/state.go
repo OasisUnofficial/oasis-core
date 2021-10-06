@@ -23,6 +23,8 @@ const (
 	WaitingForBlock = "WaitingForBlock"
 	// WaitingForEvent is the name of StateWaitingForEvent.
 	WaitingForEvent = "WaitingForEvent"
+	// WaitingForTxs is the name of the StateWaitingForTxs.
+	WaitingForTxs = "WaitingForTxs"
 	// ProcessingBatch is the name of StateProcessingBatch.
 	ProcessingBatch = "ProcessingBatch"
 	// WaitingForFinalize is the name of StateWaitingForFinalize.
@@ -48,6 +50,8 @@ var validStateTransitions = map[StateName][]StateName{
 		ProcessingBatch,
 		// Received batch, waiting for discrepancy event.
 		WaitingForEvent,
+		// Received batch, waiting for missing transactions.
+		WaitingForTxs,
 		// Epoch transition occurred and we are no longer in the committee.
 		NotReady,
 	},
@@ -60,6 +64,8 @@ var validStateTransitions = map[StateName][]StateName{
 		ProcessingBatch,
 		// Seen block that we were waiting for, waiting for disrepancy event.
 		WaitingForEvent,
+		// Seen block that we were waiting for, waiting for transactions.
+		WaitingForTxs,
 		// Epoch transition occurred and we are no longer in the committee.
 		NotReady,
 	},
@@ -69,6 +75,17 @@ var validStateTransitions = map[StateName][]StateName{
 		// Abort: seen newer block while waiting for event.
 		WaitingForBatch,
 		// Discrepancy event received.
+		ProcessingBatch,
+		// Discrepancy event received, waiting for transactions.
+		WaitingForTxs,
+		// Epoch transition occurred and we are no longer in the committee.
+		NotReady,
+	},
+
+	WaitingForTxs: {
+		// Abort: seen newer block while waiting for missing transactions.
+		WaitingForBatch,
+		// Received all missing transactions.
 		ProcessingBatch,
 		// Epoch transition occurred and we are no longer in the committee.
 		NotReady,
@@ -156,6 +173,21 @@ func (s StateWaitingForEvent) Name() StateName {
 
 // String returns a string representation of the state.
 func (s StateWaitingForEvent) String() string {
+	return string(s.Name())
+}
+
+type StateWaitingForTxs struct {
+	// Batch that is being processed.
+	batch *unresolvedBatch
+}
+
+// Name returns the name of the state.
+func (s StateWaitingForTxs) Name() StateName {
+	return WaitingForTxs
+}
+
+// String returns a string representation of the state.
+func (s StateWaitingForTxs) String() string {
 	return string(s.Name())
 }
 

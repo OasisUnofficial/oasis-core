@@ -33,7 +33,7 @@ var (
 	ErrBadExecutorCommitment  = errors.New(moduleName, 11, "roothash/commitment: bad executor commitment")
 	ErrTxnSchedSigInvalid     = p2pError.Permanent(errors.New(moduleName, 12, "roothash/commitment: txn scheduler signature invalid"))
 	ErrInvalidMessages        = p2pError.Permanent(errors.New(moduleName, 13, "roothash/commitment: invalid messages"))
-	ErrBadStorageReceipts     = errors.New(moduleName, 14, "roothash/commitment: bad storage receipts")
+	// Error code 14 is reserved for future use.
 	ErrTimeoutNotCorrectRound = errors.New(moduleName, 15, "roothash/commitment: timeout not for correct round")
 	ErrNodeIsScheduler        = errors.New(moduleName, 16, "roothash/commitment: node is scheduler")
 	ErrMajorityFailure        = errors.New(moduleName, 17, "roothash/commitment: majority commitments indicated failure")
@@ -56,13 +56,9 @@ const (
 
 var logger *logging.Logger = logging.GetLogger("roothash/commitment/pool")
 
-// SignatureVerifier is an interface for verifying storage and transaction
-// scheduler signatures against the active committees.
+// SignatureVerifier is an interface for verifying transaction scheduler signatures against the
+// active committees.
 type SignatureVerifier interface {
-	// VerifyCommitteeSignatures verifies that the given signatures come from
-	// the current committee members of the given kind.
-	VerifyCommitteeSignatures(kind scheduler.CommitteeKind, sigs []signature.Signature) error
-
 	// VerifyTxnSchedulerSigner verifies that the given signature comes from
 	// the transaction scheduler at provided round.
 	VerifyTxnSchedulerSigner(sig signature.Signature, round uint64) error
@@ -251,7 +247,7 @@ func (p *Pool) addOpenExecutorCommitment( // nolint: gocyclo
 		return ErrBadExecutorCommitment
 	}
 
-	if err := sv.VerifyTxnSchedulerSigner(body.TxnSchedSig, blk.Header.Round); err != nil {
+	if err := sv.VerifyTxnSchedulerSigner(body.ProposalSignature, blk.Header.Round); err != nil {
 		logger.Debug("executor commitment has bad transaction scheduler signer",
 			"node_id", id,
 			"round", blk.Header.Round,
@@ -259,9 +255,9 @@ func (p *Pool) addOpenExecutorCommitment( // nolint: gocyclo
 		)
 		return err
 	}
-	ok, err := body.VerifyTxnSchedSignature(p.Runtime.ID, blk.Header)
+	ok, err := body.VerifyProposalSignature(p.Runtime.ID, blk.Header)
 	if err != nil {
-		logger.Error("verify txn scheduler signature error",
+		logger.Error("failed to verify proposal signature",
 			"runtime_id", p.Runtime.ID,
 			"err", err,
 		)
@@ -307,30 +303,6 @@ func (p *Pool) addOpenExecutorCommitment( // nolint: gocyclo
 			if !rak.Verify(ComputeResultsHeaderSignatureContext, cbor.Marshal(header), rakSig[:]) {
 				return ErrRakSigInvalid
 			}
-		}
-
-		// Check if the header refers to merkle roots in storage.
-		if len(body.StorageSignatures) < int(p.Runtime.Storage.MinWriteReplication) {
-			logger.Debug("executor commitment doesn't have enough storage receipts",
-				"node_id", id,
-				"min_write_replication", p.Runtime.Storage.MinWriteReplication,
-				"num_receipts", len(body.StorageSignatures),
-			)
-			return ErrBadStorageReceipts
-		}
-		if err := sv.VerifyCommitteeSignatures(scheduler.KindStorage, body.StorageSignatures); err != nil {
-			logger.Debug("executor commitment has bad storage receipt signers",
-				"node_id", id,
-				"err", err,
-			)
-			return err
-		}
-		if err := body.VerifyStorageReceiptSignatures(blk.Header.Namespace); err != nil {
-			logger.Debug("executor commitment has bad storage receipt signatures",
-				"node_id", id,
-				"err", err,
-			)
-			return p2pError.Permanent(err)
 		}
 
 		// Check emitted runtime messages.

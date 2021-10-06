@@ -83,11 +83,6 @@ func (sc *runtimeUpgradeImpl) Fixture() (*oasis.NetworkFixture, error) {
 		})
 	}
 
-	// The runtime ID stays the same, so pass only one instance to the storage workers.
-	for i := range f.StorageWorkers {
-		f.StorageWorkers[i].Runtimes = []int{computeIndex}
-	}
-
 	return f, nil
 }
 

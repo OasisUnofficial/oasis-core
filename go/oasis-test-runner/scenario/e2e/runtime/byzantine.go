@@ -3,11 +3,11 @@ package runtime
 import (
 	"context"
 	"fmt"
-	"strconv"
 	"time"
 
 	"github.com/oasisprotocol/oasis-core/go/common/quantity"
 	consensus "github.com/oasisprotocol/oasis-core/go/consensus/api"
+
 	"github.com/oasisprotocol/oasis-core/go/oasis-node/cmd/debug/byzantine"
 	"github.com/oasisprotocol/oasis-core/go/oasis-test-runner/env"
 	"github.com/oasisprotocol/oasis-core/go/oasis-test-runner/log"
@@ -25,7 +25,6 @@ var (
 	// Permutations generated in the epoch 2 election are
 	// executor worker:            1 (w+s), 3 (w), 0 (-), 2 (-)
 	// executor backup worker:     0   (b), 3 (-), 2 (-), 1 (-)
-	// storage worker:             0   (w), 1 (w)
 	// w = worker and not scheduler in first round
 	// w+s = worker and scheduler in first round
 	// b = backup
@@ -34,7 +33,6 @@ var (
 	//
 	// For executor scripts, it suffices to be index 3.
 	// For executor and scheduler scripts, it suffices to be index 1.
-	// For storage worker scripts suffices to be index 0.
 
 	// ByzantineExecutorHonest is the byzantine executor honest scenario.
 	ByzantineExecutorHonest scenario.Scenario = newByzantineImpl(
@@ -95,6 +93,25 @@ var (
 		[]oasis.Argument{
 			{Name: byzantine.CfgSchedulerRoleExpected},
 			{Name: byzantine.CfgExecutorMode, Values: []string{byzantine.ModeExecutorWrong.String()}},
+		},
+	)
+	// ByzantineExecutorSchedulerBogus is the byzantine executor scheduler with bogus txs scenario.
+	ByzantineExecutorSchedulerBogus scenario.Scenario = newByzantineImpl(
+		"executor-scheduler-bogus",
+		"executor",
+		[]log.WatcherHandlerFactory{
+			// Invalid proposed batch should trigger round failure in first round (proposer timeout).
+			// In round two timeout and discrepancy detection should be triggered.
+			oasis.LogAssertRoundFailures(),
+			oasis.LogAssertTimeouts(),
+			oasis.LogAssertExecutionDiscrepancyDetected(),
+		},
+		oasis.ByzantineSlot1IdentitySeed,
+		false,
+		nil,
+		[]oasis.Argument{
+			{Name: byzantine.CfgSchedulerRoleExpected},
+			{Name: byzantine.CfgExecutorProposeBogusTx},
 		},
 	)
 	// ByzantineExecutorStraggler is the byzantine executor straggler scenario.
@@ -170,75 +187,11 @@ var (
 			{Name: byzantine.CfgExecutorMode, Values: []string{byzantine.ModeExecutorFailureIndicating.String()}},
 		},
 	)
-	// ByzantineStorageHonest is the byzantine storage honest scenario.
-	ByzantineStorageHonest scenario.Scenario = newByzantineImpl(
-		"storage-honest",
-		"storage",
-		nil,
-		oasis.ByzantineDefaultIdentitySeed,
-		false,
-		nil,
-		nil,
-	)
-	// ByzantineStorageFailApply is the byzantine storage scenario where storage node fails
-	// first 5 Apply requests.
-	ByzantineStorageFailApply scenario.Scenario = newByzantineImpl(
-		"storage-fail-apply",
-		"storage",
-		// Failing first 5 apply requests should result in no round failures. As the proposer
-		// should keep retrying proposing a batch until it succeeds.
-		nil,
-		oasis.ByzantineDefaultIdentitySeed,
-		false,
-		nil,
-		[]oasis.Argument{
-			// Fail first 5 ApplyBatch requests.
-			{Name: byzantine.CfgNumStorageFailApply, Values: []string{strconv.Itoa(5)}},
-		},
-	)
-	// ByzantineStorageFailApplyBatch is the byzantine storage scenario where storage node fails
-	// first 3 ApplyBatch requests.
-	ByzantineStorageFailApplyBatch scenario.Scenario = newByzantineImpl(
-		"storage-fail-applybatch",
-		"storage",
-		[]log.WatcherHandlerFactory{
-			// There should be a discrepancy. Discrepancy resolution should fail with majority failure.
-			oasis.LogAssertExecutionDiscrepancyDetected(),
-			oasis.LogAssertDiscrepancyMajorityFailure(),
-			oasis.LogAssertRoundFailures(),
-		},
-		oasis.ByzantineDefaultIdentitySeed,
-		false,
-		nil,
-		[]oasis.Argument{
-			// Fail first 3 ApplyBatch requests - from the 2 executor workers and 1 backup node.
-			{Name: byzantine.CfgNumStorageFailApplyBatch, Values: []string{strconv.Itoa(3)}},
-		},
-	)
-	// ByzantineStorageFailRead is the byzantine storage node scenario that fails all read requests.
-	ByzantineStorageFailRead scenario.Scenario = newByzantineImpl(
-		"storage-fail-read",
-		"storage",
-		// There should be no discrepancy or round failures.
-		nil,
-		oasis.ByzantineDefaultIdentitySeed,
-		// Hack to work around the way the storage client selects nodes.
-		// It can happen that for this test, the client will keep selecting the byzantine
-		// node instead of the other storage nodes and so would never be able to fully sync.
-		// It can take up to two minutes for storage-0 to sync in this scenario with the
-		// current shuffling method in the storage client. See also #1815.
-		true,
-		nil,
-		[]oasis.Argument{
-			// Fail all read requests.
-			{Name: byzantine.CfgFailReadRequests},
-		},
-	)
-	// ByzantineStorageCorruptGetDiff is the byzantine storage node scenario that corrupts GetDiff
+	// ByzantineExecutorCorruptGetDiff is the byzantine executor node scenario that corrupts GetDiff
 	// responses.
-	ByzantineStorageCorruptGetDiff scenario.Scenario = newByzantineImpl(
-		"storage-corrupt-getdiff",
-		"storage",
+	ByzantineExecutorCorruptGetDiff scenario.Scenario = newByzantineImpl(
+		"executor-corrupt-getdiff",
+		"executor",
 		// There should be no discrepancy or round failures.
 		nil,
 		oasis.ByzantineDefaultIdentitySeed,
@@ -439,7 +392,7 @@ WatchBlocksLoop:
 		return nil
 	}
 
-	// Wait for all storage nodes to be synced.
+	// Wait for all compute nodes to be synced.
 	blk, err := sc.Net.ClientController().RuntimeClient.GetBlock(ctx, &runtimeClient.GetBlockRequest{
 		RuntimeID: runtimeID,
 		Round:     runtimeClient.RoundLatest,
@@ -448,27 +401,27 @@ WatchBlocksLoop:
 		return fmt.Errorf("failed to fetch latest block: %w", err)
 	}
 
-	sc.Logger.Info("waiting for storage nodes to be synced",
+	sc.Logger.Info("waiting for compute nodes to be synced",
 		"target_round", blk.Header.Round,
 	)
 
 	syncedNodes := make(map[string]bool)
 	storageCtx, cancelFn := context.WithTimeout(ctx, 60*time.Second)
 	defer cancelFn()
-StorageWorkerSyncLoop:
+ComputeWorkerSyncLoop:
 	for {
 		if storageCtx.Err() != nil {
-			return fmt.Errorf("failed to wait for storage nodes to be synced: %w", storageCtx.Err())
+			return fmt.Errorf("failed to wait for compute nodes to be synced: %w", storageCtx.Err())
 		}
 
-		for _, n := range sc.Net.StorageWorkers() {
+		for _, n := range sc.Net.ComputeWorkers() {
 			if syncedNodes[n.Name] {
 				continue
 			}
 
 			ctrl, err := oasis.NewController(n.SocketPath())
 			if err != nil {
-				return fmt.Errorf("failed to create storage node controller: %w", err)
+				return fmt.Errorf("failed to create compute node controller: %w", err)
 			}
 
 			// Iterate over the roots to confirm they have been synced.
@@ -484,17 +437,17 @@ StorageWorkerSyncLoop:
 
 				if err != nil {
 					// Failed to iterate over the root.
-					sc.Logger.Warn("storage node is still not synced",
+					sc.Logger.Warn("compute node is still not synced",
 						"node", n.Name,
 						"root", root,
 						"err", err,
 					)
 					time.Sleep(1 * time.Second)
-					continue StorageWorkerSyncLoop
+					continue ComputeWorkerSyncLoop
 				}
 			}
 
-			sc.Logger.Warn("storage node is synced",
+			sc.Logger.Warn("compute node is synced",
 				"node", n.Name,
 			)
 			syncedNodes[n.Name] = true
