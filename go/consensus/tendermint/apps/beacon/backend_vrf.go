@@ -12,6 +12,7 @@ import (
 	"github.com/oasisprotocol/oasis-core/go/common/cbor"
 	"github.com/oasisprotocol/oasis-core/go/common/crypto/signature"
 	"github.com/oasisprotocol/oasis-core/go/common/crypto/tuplehash"
+	"github.com/oasisprotocol/oasis-core/go/common/node"
 	"github.com/oasisprotocol/oasis-core/go/consensus/api/transaction"
 	"github.com/oasisprotocol/oasis-core/go/consensus/tendermint/abci"
 	"github.com/oasisprotocol/oasis-core/go/consensus/tendermint/api"
@@ -90,12 +91,77 @@ func (impl *backendVRF) OnBeginBlock(
 		}
 	}
 
-	if future == nil {
-		// Must be using the debug mock backend.  Nothing we can do.
-		return nil
-	}
-
 	switch {
+	case future == nil:
+		// This will only happen if mock (explicit) timekeeping is in use.
+		if !params.DebugMockBackend {
+			ctx.Logger().Error("no future epoch scheduled, and not using mock backend",
+				"height", height,
+			)
+			return fmt.Errorf("beacon: timekeeping broken")
+		}
+
+		var pendingMockEpoch *beacon.EpochTime
+		if pendingMockEpoch, err = state.PendingMockEpoch(ctx); err != nil {
+			return fmt.Errorf("beacon: failed to query mock epoch state: %w", err)
+		}
+		if pendingMockEpoch == nil {
+			// Explicit epoch set tx hasn't happened yet.
+			return nil
+		}
+		if height <= vrfState.SubmitAfter {
+			// There is a pending epoch, but there is no way the next election
+			// will succeed as it is impossible for there to be any proofs.
+			return nil
+		}
+		nextEpoch := *pendingMockEpoch
+
+		// We don't actually know how many nodes will be submitting Pi,
+		// so there is no "easy" way to know if the epoch transition tx
+		// was submitted after a sensible delay, so try to be clever
+		// about it.
+		registryState := registryState.NewMutableState(ctx.State())
+		var nodes []*node.Node
+		if nodes, err = registryState.Nodes(ctx); err != nil {
+			return fmt.Errorf("beacon: failed to query registered nodes")
+		}
+
+		// If every node submitted a proof, we can handle this immediately.
+		if len(vrfState.Pi) < len(nodes) {
+			// Query the last transition height.
+			var lastHeight int64
+			if _, lastHeight, err = state.GetEpoch(ctx); err != nil {
+				return fmt.Errorf("beacon: failed to get current epoch transition height: %w", err)
+			}
+
+			// Delay the mock transition up to the standard interval.
+			if height < lastHeight+params.VRFParameters.Interval {
+				return nil
+			}
+
+			ctx.Logger().Warn("mock epoch transition without all proofs",
+				"epoch", nextEpoch,
+				"num_nodes", len(nodes),
+				"num_proofs", len(vrfState.Pi),
+			)
+		}
+
+		// Sigh, the mux's (applicationState)'s notion of GetCurrentEpoch
+		// needs to be accurate, so it needs to know of epoch transitions
+		// prior to them actually happening.
+		if err = state.ClearPendingMockEpoch(ctx); err != nil {
+			return fmt.Errorf("beacon: failed to clear mock epoch state: %w", err)
+		}
+
+		ctx.Logger().Debug("scheduling mock epoch transition for the next block",
+			"next_epoch", nextEpoch,
+			"transition_height", height+1,
+		)
+		if err = impl.app.scheduleEpochTransitionBlock(ctx, state, nextEpoch, height+1); err != nil {
+			return err
+		}
+
+		return nil
 	case future.Height < height:
 		// What the fuck, we missed transitioning the epoch?
 		ctx.Logger().Error("height mismatch in defered set",
@@ -282,12 +348,22 @@ func (impl *backendVRF) doSetEpochTx(
 	}
 
 	var epoch beacon.EpochTime
-	if err := cbor.Unmarshal(txBody, &epoch); err != nil {
+	if err = cbor.Unmarshal(txBody, &epoch); err != nil {
 		return err
 	}
 
-	// XXX: Decide if we want to have this try to wait for enough VRF proofs
-	// to be gathered or not.
+	// Ensure there is no SetEpoch call in progress.
+	pendingMockEpoch, err := state.PendingMockEpoch(ctx)
+	if err != nil {
+		return fmt.Errorf("beacon: failed to query mock epoch state: %w", err)
+	}
+	if pendingMockEpoch != nil {
+		// Unless the requested explicit epoch happens to be pending.
+		if *pendingMockEpoch == epoch {
+			return nil
+		}
+		return fmt.Errorf("beacon: explicit epoch transition already pending")
+	}
 
 	if epoch <= now {
 		ctx.Logger().Error("explicit epoch transition does not advance time",
@@ -297,17 +373,14 @@ func (impl *backendVRF) doSetEpochTx(
 		return fmt.Errorf("beacon: explicit epoch does not advance time")
 	}
 
-	height := ctx.BlockHeight() + 1 // Current height is ctx.BlockHeight() + 1
+	if err = state.SetPendingMockEpoch(ctx, epoch); err != nil {
+		return fmt.Errorf("beacon: failed to set pending mock epoch: %w", err)
+	}
 
-	ctx.Logger().Info("scheduling explicit epoch transition",
+	ctx.Logger().Info("scheduling explicit epoch transition on round completion",
 		"epoch", epoch,
-		"next_height", height+1,
-		"is_check_only", ctx.IsCheckOnly(),
 	)
 
-	if err := state.SetFutureEpoch(ctx, epoch, height+1); err != nil {
-		return err
-	}
 	return nil
 }
 

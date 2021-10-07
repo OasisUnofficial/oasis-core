@@ -371,7 +371,7 @@ func (impl *backendPVSS) doRoundPeriodic( //nolint: gocyclo
 		return impl.initRound(ctx, state, params, pvssState, pvssState.Epoch)
 	default:
 		if pvssState.State == beacon.StateComplete && params.DebugMockBackend {
-			pendingMockEpoch, err := state.PVSSPendingMockEpoch(ctx)
+			pendingMockEpoch, err := state.PendingMockEpoch(ctx)
 			if err != nil {
 				return fmt.Errorf("beacon: failed to query mock epoch state: %w", err)
 			}
@@ -380,7 +380,7 @@ func (impl *backendPVSS) doRoundPeriodic( //nolint: gocyclo
 				return nil
 			}
 
-			if err = state.ClearPVSSPendingMockEpoch(ctx); err != nil {
+			if err = state.ClearPendingMockEpoch(ctx); err != nil {
 				return fmt.Errorf("beacon: failed to clear mock epoch state: %w", err)
 			}
 
@@ -794,7 +794,7 @@ func (impl *backendPVSS) doSetEpochTx(
 	}
 
 	// Ensure there is no SetEpoch call in progress.
-	pendingMockEpoch, err := state.PVSSPendingMockEpoch(ctx)
+	pendingMockEpoch, err := state.PendingMockEpoch(ctx)
 	if err != nil {
 		return fmt.Errorf("beacon: failed to query mock epoch state: %w", err)
 	}
@@ -817,7 +817,7 @@ func (impl *backendPVSS) doSetEpochTx(
 		return fmt.Errorf("beacon: explicit epoch chronology violation")
 	}
 
-	if err = state.SetPVSSPendingMockEpoch(ctx, epoch); err != nil {
+	if err = state.SetPendingMockEpoch(ctx, epoch); err != nil {
 		return fmt.Errorf("beacon: failed to set pending mock epoch: %w", err)
 	}
 
