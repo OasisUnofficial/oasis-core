@@ -83,6 +83,10 @@ const (
 	CfgBeaconDebugDeterministic         = "beacon.debug.deterministic"
 	CfgBeaconDebugMockBackend           = "beacon.debug.mock_backend"
 	CfgBeaconInsecureTendermintInterval = "beacon.insecure.tendermint.interval"
+	CfgBeaconVRFBaseEpoch               = "beacon.vrf.base_epoch"
+	CfgBeaconVRFAlphaThreshold          = "beacon.vrf.alpha_threshold"
+	CfgBeaconVRFInterval                = "beacon.vrf.interval"
+	CfgBeaconVRFProofSubmissionDelay    = "beacon.vrf.submission_delay"
 	CfgBeaconPVSSParticipants           = "beacon.pvss.participants"
 	CfgBeaconPVSSThreshold              = "beacon.pvss.threshold"
 	CfgBeaconPVSSCommitInterval         = "beacon.pvss.commit_interval"
@@ -249,6 +253,13 @@ func doInitGenesis(cmd *cobra.Command, args []string) {
 	case beacon.BackendInsecure:
 		doc.Beacon.Parameters.InsecureParameters = &beacon.InsecureParameters{
 			Interval: viper.GetInt64(CfgBeaconInsecureTendermintInterval),
+		}
+	case beacon.BackendVRF:
+		doc.Beacon.Parameters.VRFParameters = &beacon.VRFParameters{
+			BaseEpoch:                 beacon.EpochTime(viper.GetInt64(CfgBeaconVRFBaseEpoch)),
+			AlphaHighQualityThreshold: viper.GetUint64(CfgBeaconVRFAlphaThreshold),
+			Interval:                  viper.GetInt64(CfgBeaconVRFInterval),
+			ProofSubmissionDelay:      viper.GetInt64(CfgBeaconVRFProofSubmissionDelay),
 		}
 	case beacon.BackendPVSS:
 		var forcedParticipants []signature.PublicKey
@@ -780,6 +791,10 @@ func init() {
 	initGenesisFlags.Bool(CfgBeaconDebugDeterministic, false, "enable deterministic beacon output (UNSAFE)")
 	initGenesisFlags.Bool(CfgBeaconDebugMockBackend, false, "use debug mock Epoch time backend")
 	initGenesisFlags.Int64(CfgBeaconInsecureTendermintInterval, 86400, "Epoch interval (in blocks)")
+	initGenesisFlags.Int64(CfgBeaconVRFBaseEpoch, 1, "Epoch to start using the VRF beacon")
+	initGenesisFlags.Uint64(CfgBeaconVRFAlphaThreshold, 1, "Number of proofs required to allow runtime elections")
+	initGenesisFlags.Int64(CfgBeaconVRFInterval, 86300, "Epoch interval (in blocks)")
+	initGenesisFlags.Int64(CfgBeaconVRFProofSubmissionDelay, 43150, "Proof submission delay (in blocks)")
 	initGenesisFlags.Uint32(CfgBeaconPVSSParticipants, 10, "number of participants in a PVSS round")
 	initGenesisFlags.Uint32(CfgBeaconPVSSThreshold, 7, "threshold entropy contributors")
 	initGenesisFlags.Int64(CfgBeaconPVSSCommitInterval, 43200, "PVSS round commit interval (in blocks)")
