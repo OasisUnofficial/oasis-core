@@ -259,6 +259,11 @@ func (sc *runtimeImpl) Fixture() (*oasis.NetworkFixture, error) {
 			RevealInterval:  (epochInterval / 2) - 4,
 			TransitionDelay: 4,
 		}
+		ff.Network.Beacon.VRFParameters = &beacon.VRFParameters{
+			AlphaHighQualityThreshold: 3,
+			Interval:                  epochInterval,
+			ProofSubmissionDelay:      epochInterval / 2,
+		}
 	}
 
 	return ff, nil

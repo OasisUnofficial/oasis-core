@@ -733,6 +733,12 @@ func (net *Network) MakeGenesis() error {
 				}...)
 			}
 		}
+	case beacon.BackendVRF:
+		args = append(args, []string{
+			"--" + genesis.CfgBeaconVRFAlphaThreshold, strconv.FormatUint(net.cfg.Beacon.VRFParameters.AlphaHighQualityThreshold, 10),
+			"--" + genesis.CfgBeaconVRFInterval, strconv.FormatUint(uint64(net.cfg.Beacon.VRFParameters.Interval), 10),
+			"--" + genesis.CfgBeaconVRFProofSubmissionDelay, strconv.FormatUint(uint64(net.cfg.Beacon.VRFParameters.ProofSubmissionDelay), 10),
+		}...)
 	default:
 		return fmt.Errorf("oasis: unsupported beacon backend: %s", net.cfg.Beacon.Backend)
 	}
@@ -903,7 +909,7 @@ func New(env *env.Env, cfg *NetworkCfg) (*Network, error) {
 		cfgCopy.Consensus.Parameters.GasCosts = make(transaction.Costs)
 	}
 	if cfgCopy.Beacon.Backend == "" {
-		cfgCopy.Beacon.Backend = beacon.BackendPVSS
+		cfgCopy.Beacon.Backend = beacon.BackendVRF
 	}
 	switch cfgCopy.Beacon.Backend {
 	case beacon.BackendInsecure:
@@ -912,6 +918,19 @@ func New(env *env.Env, cfg *NetworkCfg) (*Network, error) {
 		}
 		if cfgCopy.Beacon.InsecureParameters.Interval == 0 {
 			cfgCopy.Beacon.InsecureParameters.Interval = defaultEpochtimeTendermintInterval
+		}
+	case beacon.BackendVRF:
+		if cfgCopy.Beacon.VRFParameters == nil {
+			cfgCopy.Beacon.VRFParameters = new(beacon.VRFParameters)
+		}
+		if cfgCopy.Beacon.VRFParameters.AlphaHighQualityThreshold == 0 {
+			cfgCopy.Beacon.VRFParameters.AlphaHighQualityThreshold = defaultVRFAlphaThreshold
+		}
+		if cfgCopy.Beacon.VRFParameters.Interval == 0 {
+			cfgCopy.Beacon.VRFParameters.Interval = defaultVRFInterval
+		}
+		if cfgCopy.Beacon.VRFParameters.ProofSubmissionDelay == 0 {
+			cfgCopy.Beacon.VRFParameters.ProofSubmissionDelay = defaultVRFSubmissionDelay
 		}
 	case beacon.BackendPVSS:
 		if cfgCopy.Beacon.PVSSParameters == nil {

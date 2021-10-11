@@ -83,7 +83,6 @@ const (
 	CfgBeaconDebugDeterministic         = "beacon.debug.deterministic"
 	CfgBeaconDebugMockBackend           = "beacon.debug.mock_backend"
 	CfgBeaconInsecureTendermintInterval = "beacon.insecure.tendermint.interval"
-	CfgBeaconVRFBaseEpoch               = "beacon.vrf.base_epoch"
 	CfgBeaconVRFAlphaThreshold          = "beacon.vrf.alpha_threshold"
 	CfgBeaconVRFInterval                = "beacon.vrf.interval"
 	CfgBeaconVRFProofSubmissionDelay    = "beacon.vrf.submission_delay"
@@ -256,7 +255,6 @@ func doInitGenesis(cmd *cobra.Command, args []string) {
 		}
 	case beacon.BackendVRF:
 		doc.Beacon.Parameters.VRFParameters = &beacon.VRFParameters{
-			BaseEpoch:                 beacon.EpochTime(viper.GetInt64(CfgBeaconVRFBaseEpoch)),
 			AlphaHighQualityThreshold: viper.GetUint64(CfgBeaconVRFAlphaThreshold),
 			Interval:                  viper.GetInt64(CfgBeaconVRFInterval),
 			ProofSubmissionDelay:      viper.GetInt64(CfgBeaconVRFProofSubmissionDelay),
@@ -791,7 +789,6 @@ func init() {
 	initGenesisFlags.Bool(CfgBeaconDebugDeterministic, false, "enable deterministic beacon output (UNSAFE)")
 	initGenesisFlags.Bool(CfgBeaconDebugMockBackend, false, "use debug mock Epoch time backend")
 	initGenesisFlags.Int64(CfgBeaconInsecureTendermintInterval, 86400, "Epoch interval (in blocks)")
-	initGenesisFlags.Int64(CfgBeaconVRFBaseEpoch, 1, "Epoch to start using the VRF beacon")
 	initGenesisFlags.Uint64(CfgBeaconVRFAlphaThreshold, 1, "Number of proofs required to allow runtime elections")
 	initGenesisFlags.Int64(CfgBeaconVRFInterval, 86300, "Epoch interval (in blocks)")
 	initGenesisFlags.Int64(CfgBeaconVRFProofSubmissionDelay, 43150, "Proof submission delay (in blocks)")

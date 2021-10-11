@@ -91,6 +91,7 @@ func (sc *byzantineBeaconImpl) Fixture() (*oasis.NetworkFixture, error) {
 	if err != nil {
 		return nil, fmt.Errorf("byzantine/beacon: failed to derive node identity: %w", err)
 	}
+	f.Network.Beacon.Backend = beacon.BackendPVSS
 	f.Network.Beacon.PVSSParameters = &beacon.PVSSParameters{
 		DebugForcedParticipants: []signature.PublicKey{
 			pks[0],

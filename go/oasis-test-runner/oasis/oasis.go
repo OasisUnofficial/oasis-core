@@ -32,11 +32,16 @@ const (
 	defaultHaltEpoch                   = math.MaxUint64
 
 	defaultConsensusTimeoutCommit = 1 * time.Second
-	defaultPVSSParticipants       = 3
-	defaultPVSSThreshold          = 2
-	defaultPVSSCommitInterval     = 15
-	defaultPVSSRevealInterval     = 10
-	defaultPVSSTransitionDelay    = 4
+
+	defaultPVSSParticipants    = 3
+	defaultPVSSThreshold       = 2
+	defaultPVSSCommitInterval  = 15
+	defaultPVSSRevealInterval  = 10
+	defaultPVSSTransitionDelay = 4
+
+	defaultVRFAlphaThreshold  = 3
+	defaultVRFInterval        = 20
+	defaultVRFSubmissionDelay = 5
 
 	logNodeFile        = "node.log"
 	logConsoleFile     = "console.log"
