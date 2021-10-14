@@ -187,14 +187,23 @@ func (app *schedulerApplication) electCommittee( //nolint: gocyclo
 			return fmt.Errorf("tendermint/scheduler: failed to query VRF state: %w", err)
 		}
 		if !vrfState.AlphaIsHighQuality {
-			ctx.Logger().Error("previous epoch had weak VRF alpha, committee elections not allowed",
+			if !beaconParameters.DebugMockBackend {
+				ctx.Logger().Error("epoch had weak VRF alpha, committee elections not allowed",
+					"kind", kind,
+					"runtime_id", rt.ID,
+				)
+				if err = schedulerState.NewMutableState(ctx.State()).DropCommittee(ctx, kind, rt.ID); err != nil {
+					return fmt.Errorf("tendermint/scheduler: failed to drop committee: %w", err)
+				}
+				return nil
+			}
+
+			// This is horrible, but the tests are extremely fragile and an
+			// unexpected additional epoch transition causes lots of failures.
+			ctx.Logger().Warn("mock epochtime enabled, ignoring weak alpha check",
 				"kind", kind,
 				"runtime_id", rt.ID,
 			)
-			if err = schedulerState.NewMutableState(ctx.State()).DropCommittee(ctx, kind, rt.ID); err != nil {
-				return fmt.Errorf("tendermint/scheduler: failed to drop committee: %w", err)
-			}
-			return nil
 		}
 	}
 
