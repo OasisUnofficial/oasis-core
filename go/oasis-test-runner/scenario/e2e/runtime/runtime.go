@@ -358,15 +358,31 @@ func (sc *runtimeImpl) Run(childEnv *env.Env) error {
 }
 
 func (sc *runtimeImpl) submitRuntimeTx(ctx context.Context, id common.Namespace, method string, args interface{}) (cbor.RawMessage, error) {
+	// Submit a transaction and check the result.
+	metaResp, err := sc.submitRuntimeTxMeta(ctx, id, method, args)
+	if err != nil {
+		return nil, err
+	}
+	rsp, err := unpackRawTxResp(metaResp.Output)
+	if err != nil {
+		return nil, err
+	}
+	return rsp, nil
+}
+
+func (sc *runtimeImpl) submitRuntimeTxMeta(
+	ctx context.Context,
+	id common.Namespace,
+	method string,
+	args interface{},
+) (*runtimeClient.SubmitTxMetaResponse, error) {
 	ctrl := sc.Net.ClientController()
 	if ctrl == nil {
 		return nil, fmt.Errorf("client controller not available")
 	}
 	c := ctrl.RuntimeClient
 
-	// Submit a transaction and check the result.
-	var rsp TxnOutput
-	rawRsp, err := c.SubmitTx(ctx, &runtimeClient.SubmitTxRequest{
+	resp, err := c.SubmitTxMeta(ctx, &runtimeClient.SubmitTxRequest{
 		RuntimeID: id,
 		Data: cbor.Marshal(&TxnCall{
 			Method: method,
@@ -374,9 +390,15 @@ func (sc *runtimeImpl) submitRuntimeTx(ctx context.Context, id common.Namespace,
 		}),
 	})
 	if err != nil {
-		return nil, fmt.Errorf("failed to submit runtime tx: %w", err)
+		return nil, fmt.Errorf("failed to submit runtime meta tx: %w", err)
 	}
-	if err = cbor.Unmarshal(rawRsp, &rsp); err != nil {
+
+	return resp, nil
+}
+
+func unpackRawTxResp(rawRsp []byte) (cbor.RawMessage, error) {
+	var rsp TxnOutput
+	if err := cbor.Unmarshal(rawRsp, &rsp); err != nil {
 		return nil, fmt.Errorf("malformed tx output from runtime: %w", err)
 	}
 	if rsp.Error != nil {
@@ -399,6 +421,21 @@ func (sc *runtimeImpl) submitConsensusXferTx(
 		Nonce:    nonce,
 	})
 	return err
+}
+
+func (sc *runtimeImpl) submitConsensusXferTxMeta(
+	ctx context.Context,
+	id common.Namespace,
+	xfer staking.Transfer,
+	nonce uint64,
+) (*runtimeClient.SubmitTxMetaResponse, error) {
+	return sc.submitRuntimeTxMeta(ctx, runtimeID, "consensus_transfer", struct {
+		Transfer staking.Transfer `json:"transfer"`
+		Nonce    uint64           `json:"nonce"`
+	}{
+		Transfer: xfer,
+		Nonce:    nonce,
+	})
 }
 
 func (sc *runtimeImpl) waitForClientSync(ctx context.Context) error {
@@ -470,8 +507,25 @@ func (sc *runtimeImpl) waitNodesSynced() error {
 	return nil
 }
 
-func (sc *runtimeImpl) initialEpochTransitions(fixture *oasis.NetworkFixture) error {
+func (sc *runtimeImpl) initialEpochTransitions(fixture *oasis.NetworkFixture) (beacon.EpochTime, error) {
 	ctx := context.Background()
+
+	epoch := beacon.EpochTime(1)
+	advanceEpoch := func() error {
+		sc.Logger.Info("triggering epoch transition",
+			"epoch", epoch,
+		)
+		if err := sc.Net.Controller().SetEpoch(ctx, epoch); err != nil {
+			return fmt.Errorf("failed to set epoch: %w", err)
+		}
+		sc.Logger.Info("epoch transition done",
+			"epoch", epoch,
+		)
+
+		epoch++
+
+		return nil
+	}
 
 	if len(sc.Net.Keymanagers()) > 0 {
 		// First wait for validator and key manager nodes to register. Then perform an epoch
@@ -485,7 +539,7 @@ func (sc *runtimeImpl) initialEpochTransitions(fixture *oasis.NetworkFixture) er
 				continue
 			}
 			if err := n.WaitReady(ctx); err != nil {
-				return fmt.Errorf("failed to wait for a validator: %w", err)
+				return epoch, fmt.Errorf("failed to wait for a validator: %w", err)
 			}
 		}
 		sc.Logger.Info("waiting for key managers to initialize",
@@ -497,14 +551,13 @@ func (sc *runtimeImpl) initialEpochTransitions(fixture *oasis.NetworkFixture) er
 				continue
 			}
 			if err := n.WaitReady(ctx); err != nil {
-				return fmt.Errorf("failed to wait for a key manager: %w", err)
+				return epoch, fmt.Errorf("failed to wait for a key manager: %w", err)
 			}
 		}
-		sc.Logger.Info("triggering epoch transition")
-		if err := sc.Net.Controller().SetEpoch(ctx, 1); err != nil {
-			return fmt.Errorf("failed to set epoch: %w", err)
-		}
-		sc.Logger.Info("epoch transition done")
+	}
+
+	if err := advanceEpoch(); err != nil {
+		return epoch, err
 	}
 
 	// Wait for storage workers and compute workers to become ready.
@@ -517,7 +570,7 @@ func (sc *runtimeImpl) initialEpochTransitions(fixture *oasis.NetworkFixture) er
 			continue
 		}
 		if err := n.WaitReady(ctx); err != nil {
-			return fmt.Errorf("failed to wait for a storage worker: %w", err)
+			return epoch, fmt.Errorf("failed to wait for a storage worker: %w", err)
 		}
 	}
 	sc.Logger.Info("waiting for compute workers to initialize",
@@ -529,7 +582,7 @@ func (sc *runtimeImpl) initialEpochTransitions(fixture *oasis.NetworkFixture) er
 			continue
 		}
 		if err := n.WaitReady(ctx); err != nil {
-			return fmt.Errorf("failed to wait for a compute worker: %w", err)
+			return epoch, fmt.Errorf("failed to wait for a compute worker: %w", err)
 		}
 	}
 
@@ -540,18 +593,26 @@ func (sc *runtimeImpl) initialEpochTransitions(fixture *oasis.NetworkFixture) er
 			"num_nodes", sc.Net.NumRegisterNodes(),
 		)
 		if err := sc.Net.Controller().WaitNodesRegistered(ctx, sc.Net.NumRegisterNodes()); err != nil {
-			return fmt.Errorf("failed to wait for nodes: %w", err)
+			return epoch, fmt.Errorf("failed to wait for nodes: %w", err)
 		}
 	}
 
-	// Then perform another epoch transition to elect the committees.
-	sc.Logger.Info("triggering epoch transition")
-	if err := sc.Net.Controller().SetEpoch(ctx, 2); err != nil {
-		return fmt.Errorf("failed to set epoch: %w", err)
+	// Then perform epoch transition(s) to elect the committees.
+	if err := advanceEpoch(); err != nil {
+		return epoch, err
 	}
-	sc.Logger.Info("epoch transition done")
+	switch sc.Net.Config().Beacon.Backend {
+	case "", beacon.BackendVRF:
+		// Committee elections won't happen the first round.
+		//
+		// XXX: This breaks tests that expect certain nodes to have
+		// certain roles based on epoch.
+		if err := advanceEpoch(); err != nil {
+			return epoch, err
+		}
+	}
 
-	return nil
+	return epoch, nil
 }
 
 // RegisterScenarios registers all end-to-end scenarios.

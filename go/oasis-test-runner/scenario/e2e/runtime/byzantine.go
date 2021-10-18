@@ -383,7 +383,7 @@ func (sc *byzantineImpl) Run(childEnv *env.Env) error {
 	}
 	defer blkSub.Close()
 
-	if err = sc.initialEpochTransitions(fixture); err != nil {
+	if _, err = sc.initialEpochTransitions(fixture); err != nil {
 		return err
 	}
 
