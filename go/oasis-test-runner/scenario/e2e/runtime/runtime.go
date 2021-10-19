@@ -2,6 +2,7 @@ package runtime
 
 import (
 	"context"
+	"crypto/rand"
 	"fmt"
 	"path/filepath"
 	"time"
@@ -604,11 +605,25 @@ func (sc *runtimeImpl) initialEpochTransitions(fixture *oasis.NetworkFixture) (b
 	switch sc.Net.Config().Beacon.Backend {
 	case "", beacon.BackendVRF:
 		// Committee elections won't happen the first round.
-		//
-		// XXX: This breaks tests that expect certain nodes to have
-		// certain roles based on epoch.
 		if err := advanceEpoch(); err != nil {
 			return epoch, err
+		}
+
+		// To prevent people from writing tests that depend on very precicse
+		// timekeeping by epoch, randomize the start epoch slightly.
+		//
+		// If this causes your test to fail, it is not this code that is
+		// wrong, it is the test that is wrong.
+		var randByte [1]byte
+		_, _ = rand.Read(randByte[:])
+		numSkips := (int)(randByte[0]&3) + 1
+		sc.Logger.Info("advancing the epoch to prevent hardcoding time assumptions in tests",
+			"num_advances", numSkips,
+		)
+		for i := 0; i < numSkips; i++ {
+			if err := advanceEpoch(); err != nil {
+				return epoch, err
+			}
 		}
 	}
 
