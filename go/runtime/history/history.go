@@ -35,6 +35,9 @@ type History interface {
 	// Pruner returns the history pruner.
 	Pruner() Pruner
 
+	// PruneBefore prunes runtime history before the given round.
+	PruneBefore(round uint64) (uint64, error)
+
 	// Close closes the history keeper.
 	Close()
 }
@@ -300,6 +303,10 @@ func (h *runtimeHistory) GetEarliestBlock(ctx context.Context) (*block.Block, er
 		return nil, err
 	}
 	return annBlk.Block, nil
+}
+
+func (h *runtimeHistory) PruneBefore(round uint64) (uint64, error) {
+	return h.db.pruneBefore(round)
 }
 
 // CanPruneConsenus returns no error when the specified consensus height has been already reindexed.

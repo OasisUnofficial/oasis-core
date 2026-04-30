@@ -364,6 +364,63 @@ func TestWatchBlocksWithoutHistory(t *testing.T) {
 	})
 }
 
+func TestPruneBefore(t *testing.T) {
+	ctx := t.Context()
+
+	runtimeID := common.NewTestNamespaceFromSeed([]byte("prune test namespace"), 0)
+
+	h, err := New(runtimeID, t.TempDir(), NewNonePrunerFactory(), false)
+	require.NoError(t, err, "New")
+	defer h.Close()
+
+	// Commit blocks for rounds 10-20.
+	blks := make([]*roothash.AnnotatedBlock, 11)
+	for i := range blks {
+		blk := &roothash.AnnotatedBlock{
+			Height: int64(100 + i), // height is different than round.
+			Block:  block.NewGenesisBlock(runtimeID, 0),
+		}
+		blk.Block.Header.Round = uint64(10 + i)
+		blks[i] = blk
+	}
+	require.NoError(t, h.Commit(blks), "Commit")
+
+	t.Run("prune before earliest: no-op", func(t *testing.T) {
+		pruned, err := h.PruneBefore(10)
+		require.NoError(t, err)
+		require.EqualValues(t, 0, pruned, "no blocks should be pruned")
+
+		earliest, err := h.GetEarliestBlock(ctx)
+		require.NoError(t, err)
+		require.EqualValues(t, 10, earliest.Header.Round, "earliest round should still be 10")
+	})
+
+	t.Run("prune some versions", func(t *testing.T) {
+		pruned, err := h.PruneBefore(12)
+		require.NoError(t, err)
+		require.EqualValues(t, 2, pruned, "rounds 10-11 should be pruned")
+
+		earliest, err := h.GetEarliestBlock(ctx)
+		require.NoError(t, err)
+		require.EqualValues(t, 12, earliest.Header.Round, "earliest round should now be 12")
+	})
+
+	t.Run("prune everything", func(t *testing.T) {
+		pruned, err := h.PruneBefore(21)
+		require.NoError(t, err)
+		require.EqualValues(t, 9, pruned, "rounds 12-20 should all be pruned")
+
+		_, err = h.GetEarliestBlock(ctx)
+		require.ErrorIs(t, err, roothash.ErrNotFound, "history should be empty")
+	})
+
+	t.Run("prune on empty: no-op", func(t *testing.T) {
+		pruned, err := h.PruneBefore(2)
+		require.NoError(t, err)
+		require.EqualValues(t, 0, pruned, "nothing to prune on empty history")
+	})
+}
+
 type testPruneHandler struct {
 	done         bool
 	doneCh       chan struct{}
