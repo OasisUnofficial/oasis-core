@@ -2,6 +2,7 @@ package storage
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"math"
 
@@ -13,15 +14,17 @@ import (
 	"github.com/oasisprotocol/oasis-core/go/config"
 	cmtConfig "github.com/oasisprotocol/oasis-core/go/consensus/cometbft/config"
 	cmdCommon "github.com/oasisprotocol/oasis-core/go/oasis-node/cmd/common"
+	roothash "github.com/oasisprotocol/oasis-core/go/roothash/api"
+	"github.com/oasisprotocol/oasis-core/go/runtime/history"
 	"github.com/oasisprotocol/oasis-core/go/runtime/registry"
 	db "github.com/oasisprotocol/oasis-core/go/storage/mkvs/db/api"
 )
 
 func newPruneCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "prune-experimental",
+		Use:   "prune",
 		Args:  cobra.NoArgs,
-		Short: "EXPERIMENTAL: trigger pruning for all consensus databases",
+		Short: "trigger pruning of all databases",
 		PreRunE: func(_ *cobra.Command, args []string) error {
 			if err := cmdCommon.Init(); err != nil {
 				cmdCommon.EarlyLogAndExit(err)
@@ -38,26 +41,48 @@ func newPruneCmd() *cobra.Command {
 			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if config.GlobalConfig.Consensus.Prune.Strategy == cmtConfig.PruneStrategyNone {
-				logger.Info("skipping consensus pruning since disabled in the config")
-				return nil
-			}
-
 			runtimes, err := registry.GetConfiguredRuntimeIDs()
 			if err != nil {
 				return fmt.Errorf("failed to get configured runtimes: %w", err)
 			}
 
-			logger.Info("Starting consensus databases pruning. This may take a while...")
+			logger.Info("Starting databases pruning. This may take a while...")
 
-			if err := pruneConsensusDBs(
-				cmd.Context(),
-				cmdCommon.DataDir(),
+			dataDir := cmdCommon.DataDir()
+			ctx := cmd.Context()
+
+			// Consensus pruning
+			if config.GlobalConfig.Consensus.Prune.Strategy == cmtConfig.PruneStrategyNone {
+				logger.Info("skipping consensus pruning since disabled in the config")
+			} else if err := pruneConsensusDBs(
+				ctx,
+				dataDir,
 				config.GlobalConfig.Consensus.Prune.NumKept,
 				runtimes,
 			); err != nil {
 				return fmt.Errorf("failed to prune consensus databases: %w", err)
 			}
+
+			// Runtime pruning
+			if len(runtimes) == 0 {
+				return nil
+			}
+			if !config.GlobalConfig.Runtime.Prune.IsEnabled() {
+				logger.Info("skipping runtime pruning since disabled in the config")
+				return nil
+			}
+			for _, rt := range runtimes {
+				if err := pruneRuntimeDBs(
+					ctx,
+					dataDir,
+					rt,
+					config.GlobalConfig.Runtime.Prune.NumKept,
+				); err != nil {
+					return fmt.Errorf("failed to prune runtime databases (runtime ID: %s): %w", rt, err)
+				}
+			}
+
+			logger.Info("pruning of all databases successful")
 
 			return nil
 		},
@@ -74,12 +99,12 @@ func pruneConsensusDBs(ctx context.Context, dataDir string, numKept uint64, runt
 
 	latest, ok := ndb.GetLatestVersion()
 	if !ok {
-		logger.Info("skipping pruning as state db is empty")
+		logger.Info("skipping consensus pruning as state db is empty")
 		return nil
 	}
 
 	if latest < numKept {
-		logger.Info("skipping pruning as the latest version is smaller than the number of versions to keep")
+		logger.Info("skipping consensus pruning as the latest version is smaller than the number of versions to keep")
 		return nil
 	}
 
@@ -95,16 +120,18 @@ func pruneConsensusDBs(ctx context.Context, dataDir string, numKept uint64, runt
 		uint64(minReindexed),
 	)
 
+	logger.Info("pruning consensus state DB", "retain_height", retainHeight)
 	pruned, err := pruneBefore(ctx, ndb, retainHeight)
 	if err != nil {
-		return fmt.Errorf("failed to prune application state: %w", err)
+		return fmt.Errorf("failed to prune consensus state DB: %w", err)
 	}
-	logger.Info("pruning of consensus node DB successful", "pruned", pruned)
+	logger.Info("pruning of consensus state DB successful", "pruned", pruned)
 
 	if err := pruneCometDBs(ctx, dataDir, int64(retainHeight)); err != nil {
 		return fmt.Errorf("failed to prune CometBFT managed databases: %w", err)
 	}
 
+	logger.Info("pruning of consensus databases successful")
 	return nil
 }
 
@@ -262,4 +289,101 @@ func pruneBlocks(blockstore *store.BlockStore, statestore state.Store, retainHei
 	}
 
 	return pruned, nil
+}
+
+func pruneRuntimeDBs(ctx context.Context, dataDir string, runtimeID common.Namespace, numKept uint64) error {
+	logger := logger.With("runtime_id", runtimeID)
+
+	ndb, err := openRuntimeStateDB(dataDir, runtimeID)
+	if err != nil {
+		return fmt.Errorf("failed to open runtime state DB: %w", err)
+	}
+	defer ndb.Close()
+	latest, ok := ndb.GetLatestVersion()
+	if !ok {
+		logger.Info("skipping runtime pruning as state DB is empty")
+		return nil
+	}
+
+	if latest < numKept {
+		logger.Info("skipping runtime pruning as the latest version is smaller than the number of versions to keep")
+		return nil
+	}
+
+	// By calculating retain round from the runtime state DB latest round,
+	// we ensure light history is never pruned past the latest synced runtime
+	// round.
+	retainRound := latest - numKept
+
+	// Prune light history before state DB, since node expects this order
+	// of pruning.
+	logger.Info("pruning runtime history", "retain_round", retainRound)
+	history, err := openRuntimeLightHistory(dataDir, runtimeID)
+	if err != nil {
+		return fmt.Errorf("failed to open runtime light history: %w", err)
+	}
+	defer history.Close()
+	pruned, err := pruneRuntimeHistory(ctx, history, retainRound)
+	if err != nil {
+		return fmt.Errorf("failed to prune runtime history before round %d: %w", retainRound, err)
+	}
+	logger.Info("pruning of runtime history successful", "pruned", pruned)
+
+	logger.Info("pruning runtime state DB", "retain_round", retainRound)
+	pruned, err = pruneBefore(ctx, ndb, retainRound)
+	if err != nil {
+		return fmt.Errorf("failed to prune nodeDB before round %d: %w", retainRound, err)
+	}
+	logger.Info("pruning of runtime state DB successful", "pruned", pruned)
+
+	return nil
+}
+
+type pruneRuntimeHistoryOption func(*pruneRuntimeHistoryOptions)
+
+type pruneRuntimeHistoryOptions struct {
+	batchSize uint64
+}
+
+func withPruneRuntimeHistoryBatchSize(batchSize uint64) pruneRuntimeHistoryOption {
+	return func(opts *pruneRuntimeHistoryOptions) {
+		opts.batchSize = batchSize
+	}
+}
+
+func pruneRuntimeHistory(ctx context.Context, history history.History, retainRound uint64, options ...pruneRuntimeHistoryOption) (uint64, error) {
+	opts := pruneRuntimeHistoryOptions{
+		batchSize: 10_000,
+	}
+	for _, option := range options {
+		option(&opts)
+	}
+
+	earliest, err := history.GetEarliestBlock(ctx)
+	switch {
+	case err == nil:
+	case errors.Is(err, roothash.ErrNotFound): // empty
+		return 0, nil
+	default:
+		return 0, fmt.Errorf("failed to get earliest runtime block: %w", err)
+	}
+
+	var totalPruned uint64
+	for pruneUntil := earliest.Header.Round; pruneUntil < retainRound; {
+		logger.Debug("pruning runtime history", "prune_until", pruneUntil)
+		if err = ctx.Err(); err != nil {
+			return 0, err
+		}
+
+		pruneUntil = min(pruneUntil+opts.batchSize, retainRound)
+
+		pruned, err := history.PruneBefore(pruneUntil)
+		if err != nil {
+			return 0, fmt.Errorf("failed to prune runtime history before round %d: %w", pruneUntil, err)
+		}
+		totalPruned += pruned
+		logger.Debug("pruned runtime history", "pruned", pruned)
+	}
+
+	return totalPruned, nil
 }

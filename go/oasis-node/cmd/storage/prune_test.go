@@ -9,6 +9,9 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/oasisprotocol/oasis-core/go/common"
+	roothash "github.com/oasisprotocol/oasis-core/go/roothash/api"
+	"github.com/oasisprotocol/oasis-core/go/roothash/api/block"
+	"github.com/oasisprotocol/oasis-core/go/runtime/history"
 	"github.com/oasisprotocol/oasis-core/go/storage/mkvs"
 	dbAPI "github.com/oasisprotocol/oasis-core/go/storage/mkvs/db/api"
 	"github.com/oasisprotocol/oasis-core/go/storage/mkvs/db/pathbadger"
@@ -58,6 +61,45 @@ func TestPruneNodeDB(t *testing.T) {
 		require.NoError(t, err)
 		require.Equal(t, wantPruned, pruned)
 		require.Equal(t, wantEarliest, ndb.GetEarliestVersion())
+	})
+}
+
+func TestPruneRuntimeHistory(t *testing.T) {
+	ctx := t.Context()
+	runtimeID := common.NewTestNamespaceFromSeed([]byte("runtime history prune test ns"), 0)
+
+	h, err := history.New(runtimeID, t.TempDir(), history.NewNonePrunerFactory(), false)
+	require.NoError(t, err, "New")
+	defer h.Close()
+
+	t.Run("empty", func(t *testing.T) {
+		pruned, err := pruneRuntimeHistory(ctx, h, 10)
+		require.NoError(t, err)
+		require.EqualValues(t, 0, pruned)
+	})
+
+	// Commit blocks for rounds 0-19.
+	blks := make([]*roothash.AnnotatedBlock, 20)
+	for i := range blks {
+		blk := &roothash.AnnotatedBlock{
+			Height: int64(100 + i), // Height is different than round.
+			Block:  block.NewGenesisBlock(runtimeID, 0),
+		}
+		blk.Block.Header.Round = uint64(i)
+		blks[i] = blk
+	}
+	require.NoError(t, h.Commit(blks), "Commit")
+
+	t.Run("prune", func(t *testing.T) {
+		pruned, err := pruneRuntimeHistory(ctx, h, 1)
+		require.NoError(t, err)
+		require.EqualValues(t, 1, pruned)
+	})
+
+	t.Run("prune in batch", func(t *testing.T) {
+		pruned, err := pruneRuntimeHistory(ctx, h, 17, withPruneRuntimeHistoryBatchSize(2))
+		require.NoError(t, err)
+		require.EqualValues(t, 16, pruned)
 	})
 }
 
