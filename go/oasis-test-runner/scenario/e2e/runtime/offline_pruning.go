@@ -223,7 +223,7 @@ func (sc *offlinePruningImpl) runOfflinePruning(childEnv *env.Env, node *oasis.N
 func (sc *offlinePruningImpl) runOfflineCompaction(childEnv *env.Env, node *oasis.Node) error {
 	args := []string{
 		storageSubCommand,
-		"compact-experimental",
+		"compact",
 		configFlag, node.ConfigFile(),
 	}
 	if err := oasisCli.RunSubCommand(childEnv, sc.Logger, "offline-compaction", sc.Net.Config().NodeBinary, args); err != nil {
