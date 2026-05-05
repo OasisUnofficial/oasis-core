@@ -14,48 +14,51 @@ import (
 	db "github.com/oasisprotocol/oasis-core/go/storage/mkvs/db/api"
 )
 
-var pruneCmd = &cobra.Command{
-	Use:   "prune-experimental",
-	Args:  cobra.NoArgs,
-	Short: "EXPERIMENTAL: trigger pruning for all consensus databases",
-	RunE:  doPrune,
-}
+func newPruneCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "prune-experimental",
+		Args:  cobra.NoArgs,
+		Short: "EXPERIMENTAL: trigger pruning for all consensus databases",
+		PreRunE: func(_ *cobra.Command, args []string) error {
+			if err := cmdCommon.Init(); err != nil {
+				cmdCommon.EarlyLogAndExit(err)
+			}
 
-func doPrune(_ *cobra.Command, args []string) error {
-	if err := cmdCommon.Init(); err != nil {
-		cmdCommon.EarlyLogAndExit(err)
+			running, err := cmdCommon.IsNodeRunning()
+			if err != nil {
+				return fmt.Errorf("failed to ensure the node is not running: %w", err)
+			}
+			if running {
+				return fmt.Errorf("pruning can only be done when the node is not running")
+			}
+
+			return nil
+		},
+		RunE: func(cmd *cobra.Command, args []string) error {
+			if config.GlobalConfig.Consensus.Prune.Strategy == cmtConfig.PruneStrategyNone {
+				logger.Info("skipping consensus pruning since disabled in the config")
+				return nil
+			}
+
+			runtimes, err := registry.GetConfiguredRuntimeIDs()
+			if err != nil {
+				return fmt.Errorf("failed to get configured runtimes: %w", err)
+			}
+
+			logger.Info("Starting consensus databases pruning. This may take a while...")
+
+			if err := pruneConsensusDBs(
+				cmdCommon.DataDir(),
+				config.GlobalConfig.Consensus.Prune.NumKept,
+				runtimes,
+			); err != nil {
+				return fmt.Errorf("failed to prune consensus databases: %w", err)
+			}
+
+			return nil
+		},
 	}
-
-	running, err := cmdCommon.IsNodeRunning()
-	if err != nil {
-		return fmt.Errorf("failed to ensure the node is not running: %w", err)
-	}
-
-	if running {
-		return fmt.Errorf("pruning can only be done when the node is not running")
-	}
-
-	if config.GlobalConfig.Consensus.Prune.Strategy == cmtConfig.PruneStrategyNone {
-		logger.Info("skipping consensus pruning since disabled in the config")
-		return nil
-	}
-
-	runtimes, err := registry.GetConfiguredRuntimeIDs()
-	if err != nil {
-		return fmt.Errorf("failed to get configured runtimes: %w", err)
-	}
-
-	logger.Info("Starting consensus databases pruning. This may take a while...")
-
-	if err := pruneConsensusDBs(
-		cmdCommon.DataDir(),
-		config.GlobalConfig.Consensus.Prune.NumKept,
-		runtimes,
-	); err != nil {
-		return fmt.Errorf("failed to prune consensus databases: %w", err)
-	}
-
-	return nil
+	return cmd
 }
 
 func pruneConsensusDBs(dataDir string, numKept uint64, runtimes []common.Namespace) error {
