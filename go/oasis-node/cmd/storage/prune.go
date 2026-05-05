@@ -1,6 +1,7 @@
 package storage
 
 import (
+	"context"
 	"fmt"
 	"math"
 
@@ -13,6 +14,8 @@ import (
 	"github.com/oasisprotocol/oasis-core/go/runtime/registry"
 	db "github.com/oasisprotocol/oasis-core/go/storage/mkvs/db/api"
 )
+
+var pruneDiskSyncInterval uint64 = 10_000
 
 func newPruneCmd() *cobra.Command {
 	cmd := &cobra.Command{
@@ -48,6 +51,7 @@ func newPruneCmd() *cobra.Command {
 			logger.Info("Starting consensus databases pruning. This may take a while...")
 
 			if err := pruneConsensusDBs(
+				cmd.Context(),
 				cmdCommon.DataDir(),
 				config.GlobalConfig.Consensus.Prune.NumKept,
 				runtimes,
@@ -61,7 +65,7 @@ func newPruneCmd() *cobra.Command {
 	return cmd
 }
 
-func pruneConsensusDBs(dataDir string, numKept uint64, runtimes []common.Namespace) error {
+func pruneConsensusDBs(ctx context.Context, dataDir string, numKept uint64, runtimes []common.Namespace) error {
 	ndb, close, err := openConsensusNodeDB(dataDir)
 	if err != nil {
 		return fmt.Errorf("failed to open NodeDB: %w", err)
@@ -91,9 +95,11 @@ func pruneConsensusDBs(dataDir string, numKept uint64, runtimes []common.Namespa
 		uint64(minReindexed),
 	)
 
-	if err := pruneConsensusNodeDB(ndb, retainHeight); err != nil {
+	pruned, err := pruneBefore(ctx, ndb, retainHeight)
+	if err != nil {
 		return fmt.Errorf("failed to prune application state: %w", err)
 	}
+	logger.Info("pruning of consensus node DB successful", "pruned", pruned)
 
 	if err := pruneCometDBs(dataDir, int64(retainHeight)); err != nil {
 		return fmt.Errorf("failed to prune CometBFT managed databases: %w", err)
@@ -102,33 +108,38 @@ func pruneConsensusDBs(dataDir string, numKept uint64, runtimes []common.Namespa
 	return nil
 }
 
-func pruneConsensusNodeDB(ndb db.NodeDB, retainHeight uint64) error {
-	startHeight := ndb.GetEarliestVersion()
+func pruneBefore(ctx context.Context, ndb db.NodeDB, version uint64) (uint64, error) {
+	earliest := ndb.GetEarliestVersion()
 
-	if retainHeight <= startHeight {
-		logger.Info("consensus state already pruned", "retain_height", retainHeight, "start_height", startHeight)
-		return nil
+	if version <= earliest {
+		logger.Info("db state already pruned", "earliest", earliest, "version", version)
+		return 0, nil
 	}
 
-	logger.Info("pruning consensus state", "start_height", startHeight, "retain_height", retainHeight)
-	for h := startHeight; h < retainHeight; h++ {
-		if err := ndb.Prune(h); err != nil {
-			return fmt.Errorf("failed to prune version %d: %w", h, err)
+	logger.Info("pruning node DB", "earliest", earliest, "version", version)
+	var pruned uint64
+	for h := earliest; h < version; h++ {
+		if err := ctx.Err(); err != nil {
+			return 0, err
 		}
+		if err := ndb.Prune(h); err != nil {
+			return 0, fmt.Errorf("failed to prune version %d: %w", h, err)
+		}
+		pruned++
 
-		if h%10_000 == 0 { // periodically sync to disk
+		if pruneDiskSyncInterval != 0 && h%pruneDiskSyncInterval == 0 { // periodically sync to disk
 			if err := ndb.Sync(); err != nil {
-				return fmt.Errorf("failed to sync NodeDB: %w", err)
+				return 0, fmt.Errorf("failed to sync NodeDB: %w", err)
 			}
 			logger.Debug("forcing NodeDB disk sync during pruning", "version", h)
 		}
 	}
 
 	if err := ndb.Sync(); err != nil {
-		return fmt.Errorf("failed to sync NodeDB: %w", err)
+		return 0, fmt.Errorf("failed to sync NodeDB: %w", err)
 	}
 
-	return nil
+	return pruned, nil
 }
 
 // minReindexedHeight returns the smallest consensus height reindexed by any
