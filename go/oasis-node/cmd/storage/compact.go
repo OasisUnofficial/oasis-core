@@ -14,45 +14,49 @@ import (
 	cmdCommon "github.com/oasisprotocol/oasis-core/go/oasis-node/cmd/common"
 )
 
-var storageCompactCmd = &cobra.Command{
-	Use:   "compact-experimental",
-	Args:  cobra.NoArgs,
-	Short: "EXPERIMENTAL: trigger compaction for all consensus databases",
-	Long: `EXPERIMENTAL: Optimize the storage for all consensus databases by manually compacting the underlying storage engines.
+func newCompactCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "compact-experimental",
+		Args:  cobra.NoArgs,
+		Short: "EXPERIMENTAL: trigger compaction for all consensus databases",
+		Long: `EXPERIMENTAL: Optimize the storage for all consensus databases by manually compacting the underlying storage engines.
 
 WARNING: Ensure you have at least as much of a free disk as your largest database.
 `,
-	RunE: doDBCompactions,
-}
+		PreRunE: func(_ *cobra.Command, args []string) error {
+			if err := cmdCommon.Init(); err != nil {
+				cmdCommon.EarlyLogAndExit(err)
+			}
 
-func doDBCompactions(_ *cobra.Command, args []string) error {
-	if err := cmdCommon.Init(); err != nil {
-		cmdCommon.EarlyLogAndExit(err)
+			running, err := cmdCommon.IsNodeRunning()
+			if err != nil {
+				return fmt.Errorf("failed to ensure the node is not running: %w", err)
+			}
+
+			if running {
+				return fmt.Errorf("compaction can only be done when the node is not running")
+			}
+			return nil
+		},
+		RunE: func(cmd *cobra.Command, args []string) error {
+			dataDir := cmdCommon.DataDir()
+
+			logger.Info("Starting database compactions. This may take a while...")
+
+			// Compact CometBFT managed databases: block store, evidence and state (NOT application state).
+			if err := compactCometDBs(dataDir); err != nil {
+				return fmt.Errorf("failed to compact CometBFT managed databases: %w", err)
+			}
+
+			if err := compactConsensusNodeDB(dataDir); err != nil {
+				return fmt.Errorf("failed to compact consensus NodeDB: %w", err)
+			}
+
+			return nil
+		},
 	}
 
-	running, err := cmdCommon.IsNodeRunning()
-	if err != nil {
-		return fmt.Errorf("failed to ensure the node is not running: %w", err)
-	}
-
-	if running {
-		return fmt.Errorf("compaction can only be done when the node is not running")
-	}
-
-	dataDir := cmdCommon.DataDir()
-
-	logger.Info("Starting database compactions. This may take a while...")
-
-	// Compact CometBFT managed databases: block store, evidence and state (NOT application state).
-	if err := compactCometDBs(dataDir); err != nil {
-		return fmt.Errorf("failed to compact CometBFT managed databases: %w", err)
-	}
-
-	if err := compactConsensusNodeDB(dataDir); err != nil {
-		return fmt.Errorf("failed to compact consensus NodeDB: %w", err)
-	}
-
-	return nil
+	return cmd
 }
 
 func compactCometDBs(dataDir string) error {
