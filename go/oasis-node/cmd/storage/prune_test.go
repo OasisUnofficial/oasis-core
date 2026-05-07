@@ -52,17 +52,9 @@ func TestPruneNodeDB(t *testing.T) {
 	})
 
 	t.Run("prune with periodic disk sync", func(t *testing.T) {
-		// Force disk sync.
-		oldSyncInterval := pruneDiskSyncInterval
-		pruneDiskSyncInterval = 2
-
-		defer func() {
-			pruneDiskSyncInterval = oldSyncInterval
-		}()
-
 		wantEarliest := uint64(17)
 		wantPruned := wantEarliest - ndb.GetEarliestVersion()
-		pruned, err := pruneBefore(ctx, ndb, wantEarliest)
+		pruned, err := pruneBefore(ctx, ndb, wantEarliest, withPruneDiskSyncInterval(2))
 		require.NoError(t, err)
 		require.Equal(t, wantPruned, pruned)
 		require.Equal(t, wantEarliest, ndb.GetEarliestVersion())

@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"math"
 
+	"github.com/cometbft/cometbft/state"
+	"github.com/cometbft/cometbft/store"
 	"github.com/spf13/cobra"
 
 	"github.com/oasisprotocol/oasis-core/go/common"
@@ -14,8 +16,6 @@ import (
 	"github.com/oasisprotocol/oasis-core/go/runtime/registry"
 	db "github.com/oasisprotocol/oasis-core/go/storage/mkvs/db/api"
 )
-
-var pruneDiskSyncInterval uint64 = 10_000
 
 func newPruneCmd() *cobra.Command {
 	cmd := &cobra.Command{
@@ -101,14 +101,33 @@ func pruneConsensusDBs(ctx context.Context, dataDir string, numKept uint64, runt
 	}
 	logger.Info("pruning of consensus node DB successful", "pruned", pruned)
 
-	if err := pruneCometDBs(dataDir, int64(retainHeight)); err != nil {
+	if err := pruneCometDBs(ctx, dataDir, int64(retainHeight)); err != nil {
 		return fmt.Errorf("failed to prune CometBFT managed databases: %w", err)
 	}
 
 	return nil
 }
 
-func pruneBefore(ctx context.Context, ndb db.NodeDB, version uint64) (uint64, error) {
+type pruneOption func(*pruneOptions)
+
+type pruneOptions struct {
+	diskSyncInterval uint64
+}
+
+func withPruneDiskSyncInterval(interval uint64) pruneOption {
+	return func(opts *pruneOptions) {
+		opts.diskSyncInterval = interval
+	}
+}
+
+func pruneBefore(ctx context.Context, ndb db.NodeDB, version uint64, options ...pruneOption) (uint64, error) {
+	opts := pruneOptions{
+		diskSyncInterval: 10_000,
+	}
+	for _, option := range options {
+		option(&opts)
+	}
+
 	earliest := ndb.GetEarliestVersion()
 
 	if version <= earliest {
@@ -127,7 +146,7 @@ func pruneBefore(ctx context.Context, ndb db.NodeDB, version uint64) (uint64, er
 		}
 		pruned++
 
-		if pruneDiskSyncInterval != 0 && h%pruneDiskSyncInterval == 0 { // periodically sync to disk
+		if opts.diskSyncInterval != 0 && h%opts.diskSyncInterval == 0 { // periodically sync to disk
 			if err := ndb.Sync(); err != nil {
 				return 0, fmt.Errorf("failed to sync NodeDB: %w", err)
 			}
@@ -177,34 +196,12 @@ func minReindexedHeight(dataDir string, runtimes []common.Namespace) (int64, err
 	return minH, nil
 }
 
-func pruneCometDBs(dataDir string, retainHeight int64) error {
+func pruneCometDBs(ctx context.Context, dataDir string, retainHeight int64) error {
 	blockstore, err := openConsensusBlockstore(dataDir)
 	if err != nil {
 		return fmt.Errorf("failed to open consensus blockstore: %w", err)
 	}
 	defer blockstore.Close()
-
-	// Mimic the upstream pruning logic from CometBFT
-	// (see https://github.com/oasisprotocol/cometbft/blob/653c9a0c95ac0f91a0c8c11efb9aa21c98407af6/state/execution.go#L655):
-	// 1. Get the base from the blockstore
-	// 2. Prune blockstore
-	// 3. Prune statestore
-	//
-	// This ordering is problematic: if the blockstore pruning succeeds (updating the base) but
-	// state DB pruning fails or is interrupted, a subsequent pruning run will skip already
-	// pruned blocks while leaving part of the state DB unpruned.
-	base := blockstore.Base()
-	if retainHeight <= base {
-		logger.Info("blockstore and state db already pruned")
-		return nil
-	}
-
-	logger.Info("pruning consensus blockstore", "base", base, "retain_height", retainHeight)
-	n, err := blockstore.PruneBlocks(retainHeight)
-	if err != nil {
-		return fmt.Errorf("failed to prune blocks (retain height: %d): %w", retainHeight, err)
-	}
-	logger.Info("blockstore pruning finished", "pruned", n)
 
 	state, err := openConsensusStatestore(dataDir)
 	if err != nil {
@@ -212,11 +209,57 @@ func pruneCometDBs(dataDir string, retainHeight int64) error {
 	}
 	defer state.Close()
 
-	logger.Info("pruning consensus states", "base", base, "retain_height", retainHeight)
-	if err := state.PruneStates(base, retainHeight); err != nil {
-		return fmt.Errorf("failed to prune state db (start: %d, end: %d): %w", base, retainHeight, err)
+	logger.Info("pruning block and state store", "retain_height", retainHeight)
+
+	const cometPruneBatchSize int64 = 10_000
+	var totalPruned uint64
+	for pruneUntil := blockstore.Base(); pruneUntil < retainHeight; {
+		if err = ctx.Err(); err != nil {
+			return err
+		}
+
+		pruneUntil = min(pruneUntil+cometPruneBatchSize, retainHeight)
+
+		pruned, err := pruneBlocks(blockstore, state, pruneUntil)
+		if err != nil {
+			return fmt.Errorf("failed to prune block and state store: %w", err)
+		}
+		totalPruned += pruned
 	}
-	logger.Info("state db pruning finished")
+
+	logger.Info("successfully pruned block and state store", "pruned", totalPruned)
 
 	return nil
+}
+
+// pruneBlocks mimics the upstream pruning logic from CometBFT
+// (see https://github.com/oasisprotocol/cometbft/blob/653c9a0c95ac0f91a0c8c11efb9aa21c98407af6/state/execution.go#L655):
+// 1. Get the base from the blockstore
+// 2. Prune blockstore
+// 3. Prune statestore
+//
+// This ordering is problematic: if the blockstore pruning succeeds (updating the base) but
+// state DB pruning fails or is interrupted, a subsequent pruning run will skip already
+// pruned blocks while leaving part of the state DB unpruned.
+//
+// Best way to mitigate the size of stale state (if it happens, very unlikely) is to prune in small batches.
+func pruneBlocks(blockstore *store.BlockStore, statestore state.Store, retainHeight int64) (uint64, error) {
+	base := blockstore.Base()
+	if retainHeight <= base {
+		logger.Info("blockstore and state db already pruned")
+		return 0, nil
+	}
+
+	logger.Debug("pruning consensus blockstore", "base", base, "retain_height", retainHeight)
+	pruned, err := blockstore.PruneBlocks(retainHeight)
+	if err != nil {
+		return 0, fmt.Errorf("failed to prune blocks (retain height: %d): %w", retainHeight, err)
+	}
+
+	logger.Debug("pruning consensus states", "base", base, "retain_height", retainHeight)
+	if err := statestore.PruneStates(base, retainHeight); err != nil {
+		return 0, fmt.Errorf("failed to prune state db (start: %d, end: %d): %w", base, retainHeight, err)
+	}
+
+	return pruned, nil
 }
