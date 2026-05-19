@@ -4,11 +4,11 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"slices"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/require"
-	"golang.org/x/exp/slices"
 
 	"github.com/oasisprotocol/oasis-core/go/common"
 	roothash "github.com/oasisprotocol/oasis-core/go/roothash/api"
