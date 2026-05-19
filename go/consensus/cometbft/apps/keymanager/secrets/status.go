@@ -2,10 +2,9 @@ package secrets
 
 import (
 	"bytes"
+	"crypto/sha3"
 	"fmt"
 	"time"
-
-	"golang.org/x/crypto/sha3"
 
 	beacon "github.com/oasisprotocol/oasis-core/go/beacon/api"
 	"github.com/oasisprotocol/oasis-core/go/common/cbor"

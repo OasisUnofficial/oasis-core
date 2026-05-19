@@ -2,18 +2,17 @@
 package tuplehash
 
 import (
+	"crypto/sha3"
 	"encoding/binary"
 	"math"
 	"math/bits"
-
-	"golang.org/x/crypto/sha3"
 )
 
 var constN = []byte("TupleHash")
 
 // Hasher is a TupleHash instance.
 type Hasher struct {
-	cShake     sha3.ShakeHash
+	cShake     *sha3.SHAKE
 	outputSize uint64
 }
 
@@ -33,22 +32,12 @@ func (h *Hasher) Write(b []byte) (int, error) {
 }
 
 // Sum appends the current hash to b and returns the resulting slice.
-// It does not change the underlying hash state.
+// The underlying hash state is changed.
 func (h *Hasher) Sum(b []byte) []byte {
-	cShake := h.cShake.Clone()
-
-	_, _ = cShake.Write(rightEncode(h.outputSize * 8)) // in bits
+	_, _ = h.cShake.Write(rightEncode(h.outputSize * 8)) // in bits
 	digest := make([]byte, int(h.outputSize))
-	_, _ = cShake.Read(digest)
+	_, _ = h.cShake.Read(digest)
 	return append(b, digest...)
-}
-
-// Clone creates a copy of an existing TupleHash instance.
-func (h *Hasher) Clone() *Hasher {
-	return &Hasher{
-		cShake:     h.cShake.Clone(),
-		outputSize: h.outputSize,
-	}
 }
 
 // New128 creates a new TupleHash128 instance with the specified output size
@@ -70,12 +59,12 @@ func doNew(securityStrength, outputSize int, customizationString []byte) *Hasher
 		panic("common/crypto/tuplehash: invalid output size")
 	}
 
-	var cShake sha3.ShakeHash
+	var cShake *sha3.SHAKE
 	switch securityStrength {
 	case 128:
-		cShake = sha3.NewCShake128(constN, customizationString)
+		cShake = sha3.NewCSHAKE128(constN, customizationString)
 	case 256:
-		cShake = sha3.NewCShake256(constN, customizationString)
+		cShake = sha3.NewCSHAKE256(constN, customizationString)
 	default:
 		panic("common/crypto/tuplehash: invalid security strength")
 	}

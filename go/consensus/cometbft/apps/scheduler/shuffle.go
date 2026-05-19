@@ -66,11 +66,13 @@ func shuffleValidators(
 			"num_proofs", len(vrf.Pi),
 		)
 
-		baseHasher := newBetaHasher(
-			[]byte("oasis-core:vrf/validator"),
-			tmBeacon.MustGetChainContext(ctx),
-			epoch,
-		)
+		baseHasher := func() *tuplehash.Hasher {
+			return newBetaHasher(
+				[]byte("oasis-core:vrf/validator"),
+				tmBeacon.MustGetChainContext(ctx),
+				epoch,
+			)
+		}
 
 		// Do the cryptographic sortition.
 		ret := sortNodesByHashedBeta(
@@ -426,13 +428,15 @@ func electCommitteeMembers( //nolint: gocyclo
 			idxs = rng.Perm(nrNodes)
 		case true:
 			// Use the VRF proofs to do the elections.
-			baseHasher := newCommitteeBetaHasher(
-				tmBeacon.MustGetChainContext(ctx),
-				epoch,
-				rt.ID,
-				kind,
-				role,
-			)
+			baseHasher := func() *tuplehash.Hasher {
+				return newCommitteeBetaHasher(
+					tmBeacon.MustGetChainContext(ctx),
+					epoch,
+					rt.ID,
+					kind,
+					role,
+				)
+			}
 
 			idxs = committeeVRFBetaIndexes(
 				vrf,
@@ -521,7 +525,7 @@ func electCommitteeMembers( //nolint: gocyclo
 
 func committeeVRFBetaIndexes(
 	vrf *beacon.PrevVRFState,
-	baseHasher *tuplehash.Hasher,
+	baseHasher func() *tuplehash.Hasher,
 	nodes []*node.Node,
 ) []int {
 	indexByNode := make(map[signature.PublicKey]int)
@@ -545,7 +549,7 @@ func committeeVRFBetaIndexes(
 
 func sortNodesByHashedBeta(
 	vrf *beacon.PrevVRFState,
-	baseHasher *tuplehash.Hasher,
+	baseHasher func() *tuplehash.Hasher,
 	nodes []*node.Node,
 ) []*node.Node {
 	// Accumulate the hashed betas.
@@ -584,12 +588,12 @@ func sortNodesByHashedBeta(
 type hashedBeta [32]byte
 
 func hashBeta(
-	h *tuplehash.Hasher,
+	baseHasher func() *tuplehash.Hasher,
 	beta []byte,
 ) hashedBeta {
-	hh := h.Clone()
-	_, _ = hh.Write(beta)
-	digest := hh.Sum(nil)
+	h := baseHasher()
+	_, _ = h.Write(beta)
+	digest := h.Sum(nil)
 
 	var ret hashedBeta
 	copy(ret[:], digest)
@@ -658,13 +662,15 @@ func dedupEntityNodesByHashedBeta(
 		return nodes
 	}
 
-	baseHasher := newCommitteeDedupBetaHasher(
-		chainContext,
-		epoch,
-		runtimeID,
-		kind,
-		role,
-	)
+	baseHasher := func() *tuplehash.Hasher {
+		return newCommitteeDedupBetaHasher(
+			chainContext,
+			epoch,
+			runtimeID,
+			kind,
+			role,
+		)
+	}
 
 	// Do the cryptographic sortition.
 	shuffled := sortNodesByHashedBeta(

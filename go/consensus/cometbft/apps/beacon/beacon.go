@@ -3,11 +3,11 @@
 package beacon
 
 import (
+	"crypto/sha3"
 	"encoding/binary"
 	"fmt"
 
 	"github.com/cometbft/cometbft/abci/types"
-	"golang.org/x/crypto/sha3"
 
 	beacon "github.com/oasisprotocol/oasis-core/go/beacon/api"
 	consensus "github.com/oasisprotocol/oasis-core/go/consensus/api"
