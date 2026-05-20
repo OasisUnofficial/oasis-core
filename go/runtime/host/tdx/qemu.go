@@ -434,8 +434,18 @@ func (p *qemuProvisioner) updateCapabilityTEE(ctx context.Context, hp *sandbox.H
 	rekPub := rspRep.RuntimeCapabilityTEERakReportResponse.RekPub
 	rawQuote := rspRep.RuntimeCapabilityTEERakReportResponse.Report
 
-	// Prepare the quote policy for local verification. In case a policy is not available or it
-	// indicates that TDX is not supported, use the fallback policy so we can provision something.
+	var quotePolicy *sgxQuote.Policy
+	switch hp.Config.Component.Kind {
+	case component.RONL:
+		quotePolicy, err = sgxCommon.GetQuotePolicy(ctx, hp.Config.ID, hp.Config.Component.Version, p.consensus)
+		if err != nil {
+			return nil, fmt.Errorf("failed to fetch RONL quote policy: %w", err)
+		}
+	default:
+		// No policy, use fallback.
+	}
+
+	// Use the fallback policy for ROFL components and RONL components with no TDX policy so that provisioning can proceed.
 	fallbackPolicy := &sgxQuote.Policy{
 		PCS: &pcs.QuotePolicy{
 			TCBValidityPeriod:          30,
@@ -443,9 +453,8 @@ func (p *qemuProvisioner) updateCapabilityTEE(ctx context.Context, hp *sandbox.H
 			TDX:                        &pcs.TdxQuotePolicy{},
 		},
 	}
-	quotePolicy, err := sgxCommon.GetQuotePolicy(ctx, hp.Config, p.consensus, fallbackPolicy)
-	if err != nil {
-		return nil, err
+	if quotePolicy == nil {
+		quotePolicy = fallbackPolicy
 	}
 	if quotePolicy.PCS == nil {
 		quotePolicy.PCS = fallbackPolicy.PCS

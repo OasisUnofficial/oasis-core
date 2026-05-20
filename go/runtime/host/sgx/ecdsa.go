@@ -6,6 +6,7 @@ import (
 
 	"github.com/oasisprotocol/oasis-core/go/common/sgx/aesm"
 	"github.com/oasisprotocol/oasis-core/go/common/sgx/pcs"
+	"github.com/oasisprotocol/oasis-core/go/runtime/bundle/component"
 	"github.com/oasisprotocol/oasis-core/go/runtime/host"
 	"github.com/oasisprotocol/oasis-core/go/runtime/host/protocol"
 	sgxCommon "github.com/oasisprotocol/oasis-core/go/runtime/host/sgx/common"
@@ -53,13 +54,18 @@ func (ec *teeStateECDSA) Update(ctx context.Context, sp *sgxProvisioner, conn pr
 		return nil, fmt.Errorf("failed to get quote: %w", err)
 	}
 
-	quotePolicy, err := sgxCommon.GetQuotePolicy(ctx, ec.cfg, sp.consensus, nil)
-	if err != nil {
-		return nil, err
-	}
 	var pcsQuotePolicy *pcs.QuotePolicy
-	if quotePolicy != nil {
-		pcsQuotePolicy = quotePolicy.PCS
+	switch ec.cfg.Component.Kind {
+	case component.RONL:
+		quotePolicy, err := sgxCommon.GetQuotePolicy(ctx, ec.cfg.ID, ec.cfg.Component.Version, sp.consensus)
+		if err != nil {
+			return nil, fmt.Errorf("failed to fetch RONL quote policy: %w", err)
+		}
+		if quotePolicy != nil {
+			pcsQuotePolicy = quotePolicy.PCS
+		}
+	default:
+		// No policy.
 	}
 
 	quoteBundle, err := sp.pcs.ResolveQuote(ctx, rawQuote, pcsQuotePolicy)
