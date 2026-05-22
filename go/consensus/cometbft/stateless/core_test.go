@@ -8,8 +8,10 @@ import (
 
 	"github.com/stretchr/testify/require"
 
+	"github.com/oasisprotocol/oasis-core/go/common/cbor"
 	"github.com/oasisprotocol/oasis-core/go/common/crypto/hash"
 	consensus "github.com/oasisprotocol/oasis-core/go/consensus/api"
+	"github.com/oasisprotocol/oasis-core/go/consensus/api/transaction"
 	"github.com/oasisprotocol/oasis-core/go/consensus/cometbft/light"
 )
 
@@ -159,6 +161,33 @@ func TestVerification(t *testing.T) {
 			require.Error(t, err, "transaction verification should fail")
 		})
 	})
+}
+
+func TestVerifyTransactionProof(t *testing.T) {
+	clb, err := testLightBlock()
+	require.NoError(t, err, "light block generation should succeed")
+
+	lb, err := light.DecodeLightBlock(clb)
+	require.NoError(t, err, "light block decoding should succeed")
+
+	txs, err := testTransactions()
+	require.NoError(t, err, "transaction generation should succeed")
+
+	txsWithProofs := transactionsWithProofs(txs)
+	require.Len(t, txsWithProofs.Proofs, len(txsWithProofs.Transactions), "proof count should match transaction count")
+
+	for i, txBytes := range txsWithProofs.Transactions {
+		require.Equal(t, txs[i], txBytes, "transaction should match original")
+
+		var tx transaction.SignedTransaction
+		require.NoError(t, cbor.Unmarshal(txBytes, &tx), "transaction decoding should succeed")
+
+		proof := &transaction.Proof{
+			Height:   lb.Height,
+			RawProof: txsWithProofs.Proofs[i],
+		}
+		require.NoError(t, verifyTransactionProof(proof, &tx, lb), "transaction proof verification should pass")
+	}
 }
 
 func testLightBlock() (*consensus.LightBlock, error) {

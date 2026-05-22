@@ -3,7 +3,6 @@ package stateless
 import (
 	"bytes"
 	"context"
-	"crypto/sha256"
 	"fmt"
 	"sync"
 	"time"
@@ -341,12 +340,7 @@ func (c *Core) GetTransactionsWithProofs(ctx context.Context, height int64) (*co
 		return nil, err
 	}
 
-	_, proofs := merkle.Proofs(txs)
-
-	return &consensusAPI.TransactionsWithProofs{
-		Transactions: txs,
-		Proofs:       proofs,
-	}, nil
+	return transactionsWithProofs(txs), nil
 }
 
 // GetTransactionsWithResults implements api.Backend.
@@ -434,7 +428,11 @@ func (c *Core) SubmitTxWithProof(ctx context.Context, tx *transaction.SignedTran
 		return nil, err
 	}
 
-	if err = c.verifyProof(ctx, proof, tx); err != nil {
+	lb, err := c.lightBlock(ctx, proof.Height)
+	if err != nil {
+		return nil, err
+	}
+	if err = verifyTransactionProof(proof, tx, lb); err != nil {
 		return nil, err
 	}
 
@@ -688,17 +686,19 @@ func verifyTransactions(txs [][]byte, lb *cmttypes.LightBlock) error {
 	return nil
 }
 
-func (c *Core) verifyProof(ctx context.Context, proof *transaction.Proof, tx *transaction.SignedTransaction) error {
-	stateRoot, err := c.stateRoot(ctx, proof.Height)
-	if err != nil {
-		return err
-	}
+func transactionsWithProofs(txs [][]byte) *consensusAPI.TransactionsWithProofs {
+	_, proofs := merkle.ProofsForTransactions(txs)
 
-	hash := sha256.Sum256(cbor.Marshal(tx))
-	if err := merkle.Verify(proof.RawProof, stateRoot[:], hash[:]); err != nil {
+	return &consensusAPI.TransactionsWithProofs{
+		Transactions: txs,
+		Proofs:       proofs,
+	}
+}
+
+func verifyTransactionProof(proof *transaction.Proof, tx *transaction.SignedTransaction, lb *cmttypes.LightBlock) error {
+	if err := merkle.VerifyTransaction(proof.RawProof, lb.DataHash, cbor.Marshal(tx)); err != nil {
 		return fmt.Errorf("failed to verify proof: %w", err)
 	}
-
 	return nil
 }
 
