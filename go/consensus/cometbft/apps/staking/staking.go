@@ -15,6 +15,7 @@ import (
 	registryState "github.com/oasisprotocol/oasis-core/go/consensus/cometbft/apps/registry/state"
 	roothashApi "github.com/oasisprotocol/oasis-core/go/consensus/cometbft/apps/roothash/api"
 	stakingState "github.com/oasisprotocol/oasis-core/go/consensus/cometbft/apps/staking/state"
+	roothash "github.com/oasisprotocol/oasis-core/go/roothash/api"
 	"github.com/oasisprotocol/oasis-core/go/roothash/api/message"
 	staking "github.com/oasisprotocol/oasis-core/go/staking/api"
 )
@@ -145,9 +146,9 @@ func (app *Application) ExecuteMessage(ctx *api.Context, msg api.Message) (any, 
 		case m.Withdraw != nil:
 			return app.withdraw(ctx, state, m.Withdraw)
 		case m.AddEscrow != nil:
-			return app.addEscrow(ctx, state, m.AddEscrow)
+			return app.addEscrow(ctx, state, m.AddEscrow, msg.Sender == roothash.ModuleName)
 		case m.ReclaimEscrow != nil:
-			return app.reclaimEscrow(ctx, state, m.ReclaimEscrow)
+			return app.reclaimEscrow(ctx, state, m.ReclaimEscrow, msg.Sender == roothash.ModuleName)
 		default:
 			return nil, staking.ErrInvalidArgument
 		}
@@ -191,7 +192,7 @@ func (app *Application) ExecuteTx(ctx *api.Context, tx *transaction.Transaction)
 			return staking.ErrInvalidArgument
 		}
 
-		_, err := app.addEscrow(ctx, state, &escrow)
+		_, err := app.addEscrow(ctx, state, &escrow, false)
 		return err
 	case staking.MethodReclaimEscrow:
 		var reclaim staking.ReclaimEscrow
@@ -199,7 +200,7 @@ func (app *Application) ExecuteTx(ctx *api.Context, tx *transaction.Transaction)
 			return staking.ErrInvalidArgument
 		}
 
-		_, err := app.reclaimEscrow(ctx, state, &reclaim)
+		_, err := app.reclaimEscrow(ctx, state, &reclaim, false)
 		return err
 	case staking.MethodAmendCommissionSchedule:
 		var amend staking.AmendCommissionSchedule

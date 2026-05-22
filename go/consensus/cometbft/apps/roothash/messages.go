@@ -109,8 +109,6 @@ func (app *Application) processRuntimeMessages(
 	rtState *roothash.RuntimeState,
 	msgs []message.Message,
 ) []*roothash.MessageEvent {
-	ctx = ctx.WithMessageExecution()
-	defer ctx.Close()
 	ctx = ctx.WithCallerAddress(staking.NewRuntimeAddress(rtState.Runtime.ID))
 	defer ctx.Close()
 

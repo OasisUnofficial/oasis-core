@@ -223,6 +223,7 @@ func (app *Application) castVote(
 	ctx *api.Context,
 	state *governanceState.MutableState,
 	proposalVote *governance.ProposalVote,
+	runtimeMsg bool,
 ) error {
 	if ctx.IsCheckOnly() {
 		return nil
@@ -250,7 +251,7 @@ func (app *Application) castVote(
 
 	// Query signer entity descriptor.
 	var submitterNodes []signature.PublicKey
-	switch ctx.IsMessageExecution() {
+	switch runtimeMsg {
 	case true:
 		// Runtime messages are not real consensus transactions as they
 		// don't have a transaction signer.

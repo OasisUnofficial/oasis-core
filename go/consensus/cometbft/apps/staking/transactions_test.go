@@ -100,12 +100,12 @@ func TestReservedAddresses(t *testing.T) {
 	_ = q.FromInt64(1_000)
 
 	// NOTE: We need to specify escrow amount since that is checked before the check for reserved address.
-	escrowResult, err := app.addEscrow(txCtx, stakeState, &staking.Escrow{Amount: *q.Clone()})
+	escrowResult, err := app.addEscrow(txCtx, stakeState, &staking.Escrow{Amount: *q.Clone()}, false)
 	require.EqualError(err, "staking: forbidden by policy", "adding escrow for reserved address should error")
 	require.Nil(escrowResult, "escrow result should be nil on error")
 
 	// NOTE: We need to specify reclaim escrow shares since that is checked before the check for reserved address.
-	reclaimResult, err := app.reclaimEscrow(txCtx, stakeState, &staking.ReclaimEscrow{Shares: *q.Clone()})
+	reclaimResult, err := app.reclaimEscrow(txCtx, stakeState, &staking.ReclaimEscrow{Shares: *q.Clone()}, false)
 	require.EqualError(err, "staking: forbidden by policy", "reclaim escrow for reserved address should error")
 	require.Nil(reclaimResult, "reclaim escrow result should be nil on error")
 
@@ -757,7 +757,7 @@ func TestAddEscrow(t *testing.T) {
 		defer txCtx.Close()
 		txCtx.SetTxSigner(tc.txSigner)
 
-		result, err := app.addEscrow(txCtx, stakeState, tc.escrow)
+		result, err := app.addEscrow(txCtx, stakeState, tc.escrow, false)
 		require.ErrorIs(err, tc.err, tc.msg)
 		require.EqualValues(tc.result, result, tc.msg)
 	}
@@ -795,7 +795,7 @@ func TestAllowEscrowMessages(t *testing.T) {
 
 	// Add escrow transaction should be allowed.
 	txCtx.SetTxSigner(pk1)
-	result, err := app.addEscrow(txCtx, stakeState, &staking.Escrow{Account: addr1, Amount: *quantity.NewFromUint64(10)})
+	result, err := app.addEscrow(txCtx, stakeState, &staking.Escrow{Account: addr1, Amount: *quantity.NewFromUint64(10)}, false)
 	require.NoError(err, "add escrow transaction should work")
 	require.EqualValues(&staking.AddEscrowResult{
 		Owner:     addr1,
@@ -805,7 +805,7 @@ func TestAllowEscrowMessages(t *testing.T) {
 	}, result, "add escrow result should be correct")
 
 	// Reclaim escrow transaction should be allowed.
-	reclaimResult, err := app.reclaimEscrow(txCtx, stakeState, &staking.ReclaimEscrow{Account: addr1, Shares: *quantity.NewFromUint64(1)})
+	reclaimResult, err := app.reclaimEscrow(txCtx, stakeState, &staking.ReclaimEscrow{Account: addr1, Shares: *quantity.NewFromUint64(1)}, false)
 	require.NoError(err, "reclaim escrow transaction should work")
 	require.EqualValues(&staking.ReclaimEscrowResult{
 		Owner:           addr1,
@@ -816,14 +816,13 @@ func TestAllowEscrowMessages(t *testing.T) {
 		DebondEndTime:   beacon.EpochTime(0),
 	}, reclaimResult, "reclaim escrow result should be correct")
 
-	txCtx = txCtx.WithMessageExecution()
 	// Add escrow message should not be allowed.
-	result, err = app.addEscrow(txCtx, stakeState, &staking.Escrow{Account: addr1, Amount: *quantity.NewFromUint64(10)})
+	result, err = app.addEscrow(txCtx, stakeState, &staking.Escrow{Account: addr1, Amount: *quantity.NewFromUint64(10)}, true)
 	require.Equal(staking.ErrForbidden, err, "add escrow message should be denied")
 	require.Nil(result, "ailed add escrow result should be nil")
 
 	// Reclaim escrow message should not be allowed.
-	reclaimResult, err = app.reclaimEscrow(txCtx, stakeState, &staking.ReclaimEscrow{Account: addr1, Shares: *quantity.NewFromUint64(1)})
+	reclaimResult, err = app.reclaimEscrow(txCtx, stakeState, &staking.ReclaimEscrow{Account: addr1, Shares: *quantity.NewFromUint64(1)}, true)
 	require.Error(staking.ErrForbidden, err, "reclaim escrow transaction should work")
 	require.Nil(reclaimResult, "ailed add escrow result should be nil")
 
@@ -833,7 +832,7 @@ func TestAllowEscrowMessages(t *testing.T) {
 	require.NoError(err, "setting staking consensus parameters should not error")
 
 	// Escrow message should be allowed.
-	result, err = app.addEscrow(txCtx, stakeState, &staking.Escrow{Account: addr1, Amount: *quantity.NewFromUint64(10)})
+	result, err = app.addEscrow(txCtx, stakeState, &staking.Escrow{Account: addr1, Amount: *quantity.NewFromUint64(10)}, true)
 	require.NoError(err, "add escrow message should be allowed")
 	require.EqualValues(&staking.AddEscrowResult{
 		Owner:     addr1,
@@ -842,7 +841,7 @@ func TestAllowEscrowMessages(t *testing.T) {
 		NewShares: *quantity.NewFromUint64(10),
 	}, result, "add escrow result should be correct")
 
-	reclaimResult, err = app.reclaimEscrow(txCtx, stakeState, &staking.ReclaimEscrow{Account: addr1, Shares: *quantity.NewFromUint64(2)})
+	reclaimResult, err = app.reclaimEscrow(txCtx, stakeState, &staking.ReclaimEscrow{Account: addr1, Shares: *quantity.NewFromUint64(2)}, true)
 	require.NoError(err, "reclaim escrow message should work")
 	require.EqualValues(&staking.ReclaimEscrowResult{
 		Owner:           addr1,

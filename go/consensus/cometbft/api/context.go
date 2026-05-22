@@ -65,8 +65,7 @@ type Context struct {
 	mode        ContextMode
 	currentTime time.Time
 
-	isMessageExecution bool
-	isTransaction      bool
+	isTransaction bool
 
 	data           any
 	events         []types.Event
@@ -217,22 +216,21 @@ func (c *Context) CallDepth() int {
 
 // NewChild creates a new child context that shares state with the current context.
 //
-// If you want isolated state and events use NewTransaction instad.
+// If you want isolated state and events use NewTransaction instead.
 func (c *Context) NewChild() *Context {
 	cc := &Context{
-		parent:             c,
-		mode:               c.mode,
-		currentTime:        c.currentTime,
-		isMessageExecution: c.isMessageExecution,
-		gasAccountant:      c.gasAccountant,
-		txSigner:           c.txSigner,
-		callerAddress:      c.callerAddress,
-		appState:           c.appState,
-		state:              c.state,
-		lastHeight:         c.lastHeight,
-		blockCtx:           c.blockCtx,
-		initialHeight:      c.initialHeight,
-		logger:             c.logger,
+		parent:        c,
+		mode:          c.mode,
+		currentTime:   c.currentTime,
+		gasAccountant: c.gasAccountant,
+		txSigner:      c.txSigner,
+		callerAddress: c.callerAddress,
+		appState:      c.appState,
+		state:         c.state,
+		lastHeight:    c.lastHeight,
+		blockCtx:      c.blockCtx,
+		initialHeight: c.initialHeight,
+		logger:        c.logger,
 	}
 	cc.Context = context.WithValue(c.Context, contextKey{}, cc)
 	return cc
@@ -295,13 +293,6 @@ func (c *Context) WithSimulation() *Context {
 	return child
 }
 
-// WithMessageExecution creates a child context and sets the message execution flag.
-func (c *Context) WithMessageExecution() *Context {
-	child := c.NewChild()
-	child.isMessageExecution = true
-	return child
-}
-
 // IsInitChain returns true if this ia an init chain context.
 func (c *Context) IsInitChain() bool {
 	return c.mode == ContextInitChain
@@ -315,11 +306,6 @@ func (c *Context) IsCheckOnly() bool {
 // IsSimulation returns true if this is a simulation-only context.
 func (c *Context) IsSimulation() bool {
 	return c.mode == ContextSimulateTx
-}
-
-// IsMessageExecution returns true if this is a message execution context.
-func (c *Context) IsMessageExecution() bool {
-	return c.isMessageExecution
 }
 
 // EmitData emits data to be serialized as transaction output.
