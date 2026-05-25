@@ -12,10 +12,20 @@ import (
 // ErrNoSubscribers is the error returned when publishing a message that noone is subscribed to.
 var ErrNoSubscribers = errors.New("no subscribers to given message kind")
 
+// Message is a message sent between applications.
+type Message struct {
+	// Sender identifies the application that sent the message.
+	Sender string
+	// Kind specifies the receiver-defined message type.
+	Kind any
+	// Data contains the receiver-defined message data.
+	Data any
+}
+
 // MessageSubscriber is a message subscriber interface.
 type MessageSubscriber interface {
 	// ExecuteMessage executes a given message.
-	ExecuteMessage(ctx *Context, kind, msg any) (any, error)
+	ExecuteMessage(ctx *Context, msg Message) (any, error)
 }
 
 // TogglableMessageSubscriber is a message subscriber that can be disabled.
@@ -29,13 +39,12 @@ type MessageDispatcher interface {
 	// Subscribe subscribes a given message subscriber to messages of a specific kind.
 	Subscribe(kind any, ms MessageSubscriber)
 
-	// Publish publishes a message of a given kind by dispatching to all subscribers.
-	// Subscribers can return a result, but at most one subscriber should return a
-	// non-nil result to any published message. Panics in case more than one subscriber
-	// returns a non-nil result.
+	// Publish publishes a message to all subscribers./ Subscribers can return a result,
+	// but at most one subscriber should return a non-nil result to any published message.
+	// Panics in case more than one subscriber returns a non-nil result.
 	//
 	// In case there are no subscribers ErrNoSubscribers is returned.
-	Publish(ctx *Context, kind, msg any) (any, error)
+	Publish(ctx *Context, msg Message) (any, error)
 }
 
 // NoopMessageDispatcher is a no-op message dispatcher that performs no dispatch.
@@ -46,7 +55,7 @@ func (nd *NoopMessageDispatcher) Subscribe(any, MessageSubscriber) {
 }
 
 // Publish implements MessageDispatcher.
-func (nd *NoopMessageDispatcher) Publish(*Context, any, any) (any, error) {
+func (nd *NoopMessageDispatcher) Publish(*Context, Message) (any, error) {
 	return nil, nil
 }
 

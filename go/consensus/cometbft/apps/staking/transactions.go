@@ -762,7 +762,11 @@ func (app *Application) withdraw(
 			Amount:      withdraw.Amount.Clone(),
 		}
 
-		_, err = app.md.Publish(ctx, stakingApi.MessageAccountHook, wh)
+		_, err = app.md.Publish(ctx, api.Message{
+			Sender: staking.ModuleName,
+			Kind:   stakingApi.MessageAccountHook,
+			Data:   wh,
+		})
 		if err != nil {
 			return nil, fmt.Errorf("%w: hook invocation failed: %w", staking.ErrForbidden, err)
 		}

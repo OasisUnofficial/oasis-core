@@ -158,7 +158,11 @@ func (app *Application) shouldElect(ctx *api.Context) (*electionDecision, error)
 // and optionally distributes staking rewards.
 func (app *Application) elect(ctx *api.Context, epoch beacon.EpochTime, reward bool) error {
 	// Notify applications that we are going to schedule committees.
-	_, err := app.md.Publish(ctx, schedulerApi.MessageBeforeSchedule, epoch)
+	_, err := app.md.Publish(ctx, api.Message{
+		Sender: scheduler.ModuleName,
+		Kind:   schedulerApi.MessageBeforeSchedule,
+		Data:   epoch,
+	})
 	if err != nil {
 		return fmt.Errorf("cometbft/scheduler: before schedule notification failed: %w", err)
 	}
@@ -294,15 +298,15 @@ func (app *Application) elect(ctx *api.Context, epoch beacon.EpochTime, reward b
 }
 
 // ExecuteMessage implements api.MessageSubscriber.
-func (app *Application) ExecuteMessage(ctx *api.Context, kind, msg any) (any, error) {
-	switch kind {
+func (app *Application) ExecuteMessage(ctx *api.Context, msg api.Message) (any, error) {
+	switch msg.Kind {
 	case governanceApi.MessageValidateParameterChanges:
 		// A change parameters proposal is about to be submitted. Validate changes.
-		return app.changeParameters(ctx, msg, false)
+		return app.changeParameters(ctx, msg.Data, false)
 	case governanceApi.MessageChangeParameters:
 		// A change parameters proposal has just been accepted and closed. Validate and apply
 		// changes.
-		return app.changeParameters(ctx, msg, true)
+		return app.changeParameters(ctx, msg.Data, true)
 	default:
 		return nil, fmt.Errorf("cometbft/scheduler: unexpected message")
 	}

@@ -84,10 +84,10 @@ func (app *Application) BeginBlock(ctx *api.Context) error {
 }
 
 // ExecuteMessage implements api.MessageSubscriber.
-func (app *Application) ExecuteMessage(ctx *api.Context, kind, msg any) (any, error) {
-	switch kind {
+func (app *Application) ExecuteMessage(ctx *api.Context, msg api.Message) (any, error) {
+	switch msg.Kind {
 	case roothashApi.RuntimeMessageRegistry:
-		m := msg.(*message.RegistryMessage)
+		m := msg.Data.(*message.RegistryMessage)
 		switch {
 		case m.UpdateRuntime != nil:
 			state := registryState.NewMutableState(ctx.State())
@@ -97,11 +97,11 @@ func (app *Application) ExecuteMessage(ctx *api.Context, kind, msg any) (any, er
 		}
 	case governanceApi.MessageValidateParameterChanges:
 		// A change parameters proposal is about to be submitted. Validate changes.
-		return app.changeParameters(ctx, msg, false)
+		return app.changeParameters(ctx, msg.Data, false)
 	case governanceApi.MessageChangeParameters:
 		// A change parameters proposal has just been accepted and closed. Validate and apply
 		// changes.
-		return app.changeParameters(ctx, msg, true)
+		return app.changeParameters(ctx, msg.Data, true)
 	default:
 		return nil, registry.ErrInvalidArgument
 	}

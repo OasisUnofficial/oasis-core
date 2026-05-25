@@ -112,10 +112,10 @@ func (app *Application) ExecuteTx(ctx *api.Context, tx *transaction.Transaction)
 }
 
 // ExecuteMessage implements api.MessageSubscriber.
-func (app *Application) ExecuteMessage(ctx *api.Context, kind, msg any) (any, error) {
-	switch kind {
+func (app *Application) ExecuteMessage(ctx *api.Context, msg api.Message) (any, error) {
+	switch msg.Kind {
 	case roothashApi.RuntimeMessageGovernance:
-		m := msg.(*message.GovernanceMessage)
+		m := msg.Data.(*message.GovernanceMessage)
 		switch {
 		case m.CastVote != nil:
 			state := governanceState.NewMutableState(ctx.State())
@@ -130,11 +130,11 @@ func (app *Application) ExecuteMessage(ctx *api.Context, kind, msg any) (any, er
 		return app.completeStateSync(ctx)
 	case governanceApi.MessageValidateParameterChanges:
 		// A change parameters proposal is about to be submitted. Validate changes.
-		return app.changeParameters(ctx, msg, false)
+		return app.changeParameters(ctx, msg.Data, false)
 	case governanceApi.MessageChangeParameters:
 		// A change parameters proposal has just been accepted and closed. Validate and apply
 		// changes.
-		return app.changeParameters(ctx, msg, true)
+		return app.changeParameters(ctx, msg.Data, true)
 	default:
 		return nil, governance.ErrInvalidArgument
 	}
@@ -303,7 +303,11 @@ func (app *Application) executeProposal(ctx *api.Context, state *governanceState
 		}
 
 		// Notify other interested applications about the change parameters proposal.
-		res, err := app.md.Publish(ctx, governanceApi.MessageChangeParameters, proposal.Content.ChangeParameters)
+		res, err := app.md.Publish(ctx, api.Message{
+			Sender: governance.ModuleName,
+			Kind:   governanceApi.MessageChangeParameters,
+			Data:   proposal.Content.ChangeParameters,
+		})
 		if err != nil {
 			ctx.Logger().Debug("failed to dispatch change parameters proposal message",
 				"err", err,
