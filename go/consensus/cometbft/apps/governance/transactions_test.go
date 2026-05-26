@@ -483,7 +483,7 @@ func TestCastVote(t *testing.T) {
 		defer txCtx.Close()
 		txCtx.SetTxSigner(tc.txSigner)
 
-		err = app.castVote(txCtx, state, tc.vote)
+		err = app.castVote(txCtx, state, tc.vote, false)
 		require.Equal(tc.err, err, tc.msg)
 
 		tc.check()

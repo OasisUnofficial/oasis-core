@@ -19,8 +19,9 @@ import (
 	stakingapp "github.com/oasisprotocol/oasis-core/go/consensus/cometbft/apps/staking"
 	stakingState "github.com/oasisprotocol/oasis-core/go/consensus/cometbft/apps/staking/state"
 	governance "github.com/oasisprotocol/oasis-core/go/governance/api"
+	roothash "github.com/oasisprotocol/oasis-core/go/roothash/api"
 	"github.com/oasisprotocol/oasis-core/go/roothash/api/message"
-	stakingAPI "github.com/oasisprotocol/oasis-core/go/staking/api"
+	staking "github.com/oasisprotocol/oasis-core/go/staking/api"
 	upgrade "github.com/oasisprotocol/oasis-core/go/upgrade/api"
 )
 
@@ -105,21 +106,21 @@ func (app *Application) ExecuteTx(ctx *api.Context, tx *transaction.Transaction)
 			)
 			return governance.ErrInvalidArgument
 		}
-		return app.castVote(ctx, state, &proposalVote)
+		return app.castVote(ctx, state, &proposalVote, false)
 	default:
 		return governance.ErrInvalidArgument
 	}
 }
 
 // ExecuteMessage implements api.MessageSubscriber.
-func (app *Application) ExecuteMessage(ctx *api.Context, kind, msg any) (any, error) {
-	switch kind {
+func (app *Application) ExecuteMessage(ctx *api.Context, msg api.Message) (any, error) {
+	switch msg.Kind {
 	case roothashApi.RuntimeMessageGovernance:
-		m := msg.(*message.GovernanceMessage)
+		m := msg.Data.(*message.GovernanceMessage)
 		switch {
 		case m.CastVote != nil:
 			state := governanceState.NewMutableState(ctx.State())
-			return nil, app.castVote(ctx, state, m.CastVote)
+			return nil, app.castVote(ctx, state, m.CastVote, msg.Sender == roothash.ModuleName)
 		case m.SubmitProposal != nil:
 			state := governanceState.NewMutableState(ctx.State())
 			return app.submitProposal(ctx, state, m.SubmitProposal)
@@ -130,11 +131,11 @@ func (app *Application) ExecuteMessage(ctx *api.Context, kind, msg any) (any, er
 		return app.completeStateSync(ctx)
 	case governanceApi.MessageValidateParameterChanges:
 		// A change parameters proposal is about to be submitted. Validate changes.
-		return app.changeParameters(ctx, msg, false)
+		return app.changeParameters(ctx, msg.Data, false)
 	case governanceApi.MessageChangeParameters:
 		// A change parameters proposal has just been accepted and closed. Validate and apply
 		// changes.
-		return app.changeParameters(ctx, msg, true)
+		return app.changeParameters(ctx, msg.Data, true)
 	default:
 		return nil, governance.ErrInvalidArgument
 	}
@@ -303,7 +304,11 @@ func (app *Application) executeProposal(ctx *api.Context, state *governanceState
 		}
 
 		// Notify other interested applications about the change parameters proposal.
-		res, err := app.md.Publish(ctx, governanceApi.MessageChangeParameters, proposal.Content.ChangeParameters)
+		res, err := app.md.Publish(ctx, api.Message{
+			Sender: governance.ModuleName,
+			Kind:   governanceApi.MessageChangeParameters,
+			Data:   proposal.Content.ChangeParameters,
+		})
 		if err != nil {
 			ctx.Logger().Debug("failed to dispatch change parameters proposal message",
 				"err", err,
@@ -334,17 +339,17 @@ func validatorsEscrow(
 	ctx context.Context,
 	stakingState *stakingState.ImmutableState,
 	schedulerState *schedulerState.ImmutableState,
-) (*quantity.Quantity, map[stakingAPI.Address]*stakingAPI.SharePool, error) {
+) (*quantity.Quantity, map[staking.Address]*staking.SharePool, error) {
 	currentValidators, err := schedulerState.CurrentValidators(ctx)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to query current validators: %w", err)
 	}
 
 	totalVotingStake := quantity.NewQuantity()
-	validatorEntitiesEscrow := make(map[stakingAPI.Address]*stakingAPI.SharePool)
+	validatorEntitiesEscrow := make(map[staking.Address]*staking.SharePool)
 
 	for _, validator := range currentValidators {
-		entityAddr := stakingAPI.NewAddress(validator.EntityID)
+		entityAddr := staking.NewAddress(validator.EntityID)
 
 		// If there are multiple nodes in the validator set belonging to the same entity,
 		// only count the entity escrow once.
@@ -352,7 +357,7 @@ func validatorsEscrow(
 			continue
 		}
 
-		var account *stakingAPI.Account
+		var account *staking.Account
 		account, err = stakingState.Account(ctx, entityAddr)
 		if err != nil {
 			return nil, nil, fmt.Errorf("failed to query validator account: %w", err)
@@ -374,7 +379,7 @@ func (app *Application) closeProposal(
 	state *governanceState.MutableState,
 	stakingState *stakingState.ImmutableState,
 	totalVotingStake quantity.Quantity,
-	validatorEntitiesPool map[stakingAPI.Address]*stakingAPI.SharePool,
+	validatorEntitiesPool map[staking.Address]*staking.SharePool,
 	proposal *governance.Proposal,
 ) error {
 	params, err := state.ConsensusParameters(ctx)
@@ -393,8 +398,8 @@ func (app *Application) closeProposal(
 		"validator_entities_pool", validatorEntitiesPool,
 		"votes", votes,
 	)
-	validatorVotes := make(map[stakingAPI.Address]*governance.Vote)
-	validatorVoteShares := make(map[stakingAPI.Address]map[governance.Vote]quantity.Quantity)
+	validatorVotes := make(map[staking.Address]*governance.Vote)
+	validatorVoteShares := make(map[staking.Address]map[governance.Vote]quantity.Quantity)
 	for validator := range validatorEntitiesPool {
 		validatorVoteShares[validator] = make(map[governance.Vote]quantity.Quantity)
 	}

@@ -39,7 +39,7 @@ func (nd *testMsgDispatcher) Subscribe(any, abciAPI.MessageSubscriber) {
 }
 
 // Implements MessageDispatcher.
-func (nd *testMsgDispatcher) Publish(ctx *abciAPI.Context, kind, msg any) (any, error) {
+func (nd *testMsgDispatcher) Publish(ctx *abciAPI.Context, msg abciAPI.Message) (any, error) {
 	// Either we need to be in simulation mode or the gas accountant must be a no-op one.
 	if !ctx.IsSimulation() && ctx.Gas() != abciAPI.NewNopGasAccountant() {
 		panic("gas estimation should always use simulation mode")
@@ -55,9 +55,9 @@ func (nd *testMsgDispatcher) Publish(ctx *abciAPI.Context, kind, msg any) (any, 
 		governance.GasOpSubmitProposal: 2000,
 	}
 
-	switch kind {
+	switch msg.Kind {
 	case roothashApi.RuntimeMessageStaking:
-		m := msg.(*message.StakingMessage)
+		m := msg.Data.(*message.StakingMessage)
 		switch {
 		case m.Transfer != nil:
 			if err := ctx.Gas().UseGas(1, staking.GasOpTransfer, gasCosts); err != nil {
@@ -83,7 +83,7 @@ func (nd *testMsgDispatcher) Publish(ctx *abciAPI.Context, kind, msg any) (any, 
 			return nil, staking.ErrInvalidArgument
 		}
 	case roothashApi.RuntimeMessageRegistry:
-		m := msg.(*message.RegistryMessage)
+		m := msg.Data.(*message.RegistryMessage)
 		switch {
 		case m.UpdateRuntime != nil:
 			if err := ctx.Gas().UseGas(1, registry.GasOpRegisterRuntime, gasCosts); err != nil {
@@ -94,7 +94,7 @@ func (nd *testMsgDispatcher) Publish(ctx *abciAPI.Context, kind, msg any) (any, 
 			return nil, registry.ErrInvalidArgument
 		}
 	case roothashApi.RuntimeMessageGovernance:
-		m := msg.(*message.GovernanceMessage)
+		m := msg.Data.(*message.GovernanceMessage)
 		switch {
 		case m.CastVote != nil:
 			if err := ctx.Gas().UseGas(1, governance.GasOpCastVote, gasCosts); err != nil {

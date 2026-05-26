@@ -103,18 +103,18 @@ func (app *Application) ExecuteTx(ctx *api.Context, tx *transaction.Transaction)
 }
 
 // ExecuteMessage implements api.MessageSubscriber.
-func (app *Application) ExecuteMessage(ctx *api.Context, kind, msg any) (any, error) {
-	switch kind {
+func (app *Application) ExecuteMessage(ctx *api.Context, msg api.Message) (any, error) {
+	switch msg.Kind {
 	case stakingApi.MessageAccountHook:
 		// Account hook invocation.
-		return app.invokeAccountHook(ctx, msg)
+		return app.invokeAccountHook(ctx, msg.Data)
 	case governanceApi.MessageValidateParameterChanges:
 		// A change parameters proposal is about to be submitted. Validate changes.
-		return app.changeParameters(ctx, msg, false)
+		return app.changeParameters(ctx, msg.Data, false)
 	case governanceApi.MessageChangeParameters:
 		// A change parameters proposal has just been accepted and closed. Validate and apply
 		// changes.
-		return app.changeParameters(ctx, msg, true)
+		return app.changeParameters(ctx, msg.Data, true)
 	default:
 		return nil, vault.ErrInvalidArgument
 	}

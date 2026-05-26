@@ -7,6 +7,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/oasisprotocol/oasis-core/go/common/quantity"
+	"github.com/oasisprotocol/oasis-core/go/consensus/cometbft/api"
 	abciAPI "github.com/oasisprotocol/oasis-core/go/consensus/cometbft/api"
 	stakingState "github.com/oasisprotocol/oasis-core/go/consensus/cometbft/apps/staking/state"
 	vaultState "github.com/oasisprotocol/oasis-core/go/consensus/cometbft/apps/vault/state"
@@ -202,15 +203,15 @@ func (nd *testMsgDispatcher) Subscribe(any, abciAPI.MessageSubscriber) {
 }
 
 // Implements MessageDispatcher.
-func (nd *testMsgDispatcher) Publish(_ *abciAPI.Context, kind, msg any) (any, error) {
-	switch kind {
+func (nd *testMsgDispatcher) Publish(_ *abciAPI.Context, msg api.Message) (any, error) {
+	switch msg.Kind {
 	case abciAPI.MessageExecuteSubcall:
 		// Simulate subcall execution.
-		info := msg.(*abciAPI.SubcallInfo)
+		info := msg.Data.(*abciAPI.SubcallInfo)
 		nd.delivered = append(nd.delivered, info)
 		return struct{}{}, nil
 	default:
-		panic(fmt.Errorf("message kind '%T' not implemented in tests", kind))
+		panic(fmt.Errorf("message kind '%T' not implemented in tests", msg.Kind))
 	}
 }
 

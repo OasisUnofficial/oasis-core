@@ -8,6 +8,7 @@ import (
 	"github.com/oasisprotocol/oasis-core/go/common/cbor"
 	"github.com/oasisprotocol/oasis-core/go/common/crypto/hash"
 	"github.com/oasisprotocol/oasis-core/go/common/errors"
+	"github.com/oasisprotocol/oasis-core/go/consensus/cometbft/api"
 	tmapi "github.com/oasisprotocol/oasis-core/go/consensus/cometbft/api"
 	registryState "github.com/oasisprotocol/oasis-core/go/consensus/cometbft/apps/registry/state"
 	roothashApi "github.com/oasisprotocol/oasis-core/go/consensus/cometbft/apps/roothash/api"
@@ -108,8 +109,6 @@ func (app *Application) processRuntimeMessages(
 	rtState *roothash.RuntimeState,
 	msgs []message.Message,
 ) []*roothash.MessageEvent {
-	ctx = ctx.WithMessageExecution()
-	defer ctx.Close()
 	ctx = ctx.WithCallerAddress(staking.NewRuntimeAddress(rtState.Runtime.ID))
 	defer ctx.Close()
 
@@ -135,11 +134,23 @@ func (app *Application) processRuntimeMessages(
 		var err error
 		switch {
 		case msg.Staking != nil:
-			result, err = app.md.Publish(ctx, roothashApi.RuntimeMessageStaking, msg.Staking)
+			result, err = app.md.Publish(ctx, api.Message{
+				Sender: roothash.ModuleName,
+				Kind:   roothashApi.RuntimeMessageStaking,
+				Data:   msg.Staking,
+			})
 		case msg.Registry != nil:
-			result, err = app.md.Publish(ctx, roothashApi.RuntimeMessageRegistry, msg.Registry)
+			result, err = app.md.Publish(ctx, api.Message{
+				Sender: roothash.ModuleName,
+				Kind:   roothashApi.RuntimeMessageRegistry,
+				Data:   msg.Registry,
+			})
 		case msg.Governance != nil:
-			result, err = app.md.Publish(ctx, roothashApi.RuntimeMessageGovernance, msg.Governance)
+			result, err = app.md.Publish(ctx, api.Message{
+				Sender: roothash.ModuleName,
+				Kind:   roothashApi.RuntimeMessageGovernance,
+				Data:   msg.Governance,
+			})
 		default:
 			// Unsupported message.
 			err = roothash.ErrInvalidArgument

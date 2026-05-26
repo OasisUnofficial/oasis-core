@@ -76,10 +76,14 @@ func (app *Application) executeAction(ctx *api.Context, vlt *vault.Vault, action
 		}))
 	case action.ExecuteMessage != nil:
 		// Execute a message with vault as the caller.
-		_, err := app.md.Publish(ctx, api.MessageExecuteSubcall, &api.SubcallInfo{
-			Caller: vlt.Address(),
-			Method: action.ExecuteMessage.Method,
-			Body:   action.ExecuteMessage.Body,
+		_, err := app.md.Publish(ctx, api.Message{
+			Sender: vault.ModuleName,
+			Kind:   api.MessageExecuteSubcall,
+			Data: &api.SubcallInfo{
+				Caller: vlt.Address(),
+				Method: action.ExecuteMessage.Method,
+				Body:   action.ExecuteMessage.Body,
+			},
 		})
 		return err
 	default:

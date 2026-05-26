@@ -143,7 +143,11 @@ func (app *Application) submitProposal(
 	case proposalContent.ChangeParameters != nil:
 		// Notify other interested applications to validate the parameter changes.
 		var res any
-		res, err = app.md.Publish(ctx, governanceApi.MessageValidateParameterChanges, proposalContent.ChangeParameters)
+		res, err = app.md.Publish(ctx, api.Message{
+			Sender: governance.ModuleName,
+			Kind:   governanceApi.MessageValidateParameterChanges,
+			Data:   proposalContent.ChangeParameters,
+		})
 		if err != nil {
 			ctx.Logger().Debug("governance: failed to dispatch validate parameter changes message",
 				"err", err,
@@ -219,6 +223,7 @@ func (app *Application) castVote(
 	ctx *api.Context,
 	state *governanceState.MutableState,
 	proposalVote *governance.ProposalVote,
+	runtimeMsg bool,
 ) error {
 	if ctx.IsCheckOnly() {
 		return nil
@@ -246,7 +251,7 @@ func (app *Application) castVote(
 
 	// Query signer entity descriptor.
 	var submitterNodes []signature.PublicKey
-	switch ctx.IsMessageExecution() {
+	switch runtimeMsg {
 	case true:
 		// Runtime messages are not real consensus transactions as they
 		// don't have a transaction signer.

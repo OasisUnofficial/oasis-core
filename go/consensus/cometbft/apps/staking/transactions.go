@@ -254,7 +254,7 @@ func (app *Application) burnImpl(
 	return nil
 }
 
-func (app *Application) addEscrow(ctx *api.Context, state *stakingState.MutableState, escrow *staking.Escrow) (*staking.AddEscrowResult, error) {
+func (app *Application) addEscrow(ctx *api.Context, state *stakingState.MutableState, escrow *staking.Escrow, runtimeMsg bool) (*staking.AddEscrowResult, error) {
 	if ctx.IsCheckOnly() {
 		return nil, nil
 	}
@@ -269,7 +269,7 @@ func (app *Application) addEscrow(ctx *api.Context, state *stakingState.MutableS
 	}
 
 	// Check if escrow messages are allowed.
-	if ctx.IsMessageExecution() && !params.AllowEscrowMessages {
+	if runtimeMsg && !params.AllowEscrowMessages {
 		return nil, staking.ErrForbidden
 	}
 
@@ -373,7 +373,7 @@ func (app *Application) addEscrow(ctx *api.Context, state *stakingState.MutableS
 	}, nil
 }
 
-func (app *Application) reclaimEscrow(ctx *api.Context, state *stakingState.MutableState, reclaim *staking.ReclaimEscrow) (*staking.ReclaimEscrowResult, error) {
+func (app *Application) reclaimEscrow(ctx *api.Context, state *stakingState.MutableState, reclaim *staking.ReclaimEscrow, runtimeMsg bool) (*staking.ReclaimEscrowResult, error) {
 	// No sense if there is nothing to reclaim.
 	if reclaim.Shares.IsZero() {
 		return nil, staking.ErrInvalidArgument
@@ -393,7 +393,7 @@ func (app *Application) reclaimEscrow(ctx *api.Context, state *stakingState.Muta
 	}
 
 	// Check if escrow messages are allowed.
-	if ctx.IsMessageExecution() && !params.AllowEscrowMessages {
+	if runtimeMsg && !params.AllowEscrowMessages {
 		return nil, staking.ErrForbidden
 	}
 
@@ -762,7 +762,11 @@ func (app *Application) withdraw(
 			Amount:      withdraw.Amount.Clone(),
 		}
 
-		_, err = app.md.Publish(ctx, stakingApi.MessageAccountHook, wh)
+		_, err = app.md.Publish(ctx, api.Message{
+			Sender: staking.ModuleName,
+			Kind:   stakingApi.MessageAccountHook,
+			Data:   wh,
+		})
 		if err != nil {
 			return nil, fmt.Errorf("%w: hook invocation failed: %w", staking.ErrForbidden, err)
 		}
