@@ -59,8 +59,8 @@ func (q *Quote) UnmarshalBinary(data []byte) error {
 //
 // Returns the length of the decoded quote.
 func (q *Quote) UnmarshalBinaryWithTrailing(data []byte, allowTrailing bool) (int, error) {
-	if len(data) < quoteHeaderLen+reportBodySgxLen+quoteSigSizeLen {
-		return 0, fmt.Errorf("pcs/quote: invalid quote length")
+	if minLen := quoteHeaderLen + reportBodySgxLen + quoteSigSizeLen; len(data) < minLen {
+		return 0, fmt.Errorf("pcs/quote: invalid quote length: got %d, want at least %d bytes", len(data), minLen)
 	}
 
 	// Quote Header.
@@ -98,8 +98,8 @@ func (q *Quote) UnmarshalBinaryWithTrailing(data []byte, allowTrailing bool) (in
 		q.reportBody = &report
 		offset += reportBodySgxLen
 	case TeeTypeTDX:
-		if len(data) < offset+reportBodyTdLen+quoteSigSizeLen {
-			return 0, fmt.Errorf("pcs/quote: invalid quote length")
+		if minLen := offset + reportBodyTdLen + quoteSigSizeLen; len(data) < minLen {
+			return 0, fmt.Errorf("pcs/quote: invalid quote body length: got %d, want at least %d bytes", len(data), minLen)
 		}
 
 		var report TdReport
