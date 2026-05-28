@@ -36,6 +36,9 @@ const (
 	FmtLogfmt Format = iota
 	// FmtJSON is the JSON logging format.
 	FmtJSON
+
+	// messageKey is the key used for the log message in structured logging.
+	messageKey = "msg"
 )
 
 // String returns the string representation of a Format.
@@ -149,7 +152,7 @@ func (l *Logger) Debug(msg string, keyvals ...any) {
 	if l.level > LevelDebug {
 		return
 	}
-	keyvals = append([]any{"msg", msg}, keyvals...)
+	keyvals = append([]any{messageKey, msg}, keyvals...)
 	_ = level.Debug(l.logger).Log(keyvals...)
 }
 
@@ -158,7 +161,7 @@ func (l *Logger) Info(msg string, keyvals ...any) {
 	if l.level > LevelInfo {
 		return
 	}
-	keyvals = append([]any{"msg", msg}, keyvals...)
+	keyvals = append([]any{messageKey, msg}, keyvals...)
 	_ = level.Info(l.logger).Log(keyvals...)
 }
 
@@ -167,7 +170,7 @@ func (l *Logger) Warn(msg string, keyvals ...any) {
 	if l.level > LevelWarn {
 		return
 	}
-	keyvals = append([]any{"msg", msg}, keyvals...)
+	keyvals = append([]any{messageKey, msg}, keyvals...)
 	_ = level.Warn(l.logger).Log(keyvals...)
 }
 
@@ -176,7 +179,7 @@ func (l *Logger) Error(msg string, keyvals ...any) {
 	if l.level > LevelError {
 		return
 	}
-	keyvals = append([]any{"msg", msg}, keyvals...)
+	keyvals = append([]any{messageKey, msg}, keyvals...)
 	_ = level.Error(l.logger).Log(keyvals...)
 }
 

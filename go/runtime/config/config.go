@@ -347,6 +347,12 @@ const (
 
 	// PermissionLogView is the permission that grants the component rights to view logs.
 	PermissionLogView ComponentPermission = "log_view"
+
+	// PrunerStrategyNone is the name of the none pruner strategy.
+	PrunerStrategyNone = "none"
+
+	// PrunerStrategyKeepLast is the name of the keep last pruner strategy.
+	PrunerStrategyKeepLast = "keep_last"
 )
 
 // NetworkingConfig is the networking configuration.
@@ -379,7 +385,7 @@ type PruneConfig struct {
 
 // IsEnabled returns true when pruning is enabled.
 func (p PruneConfig) IsEnabled() bool {
-	return p.Strategy != "none"
+	return p.Strategy != PrunerStrategyNone
 }
 
 // IndexerConfig is history indexer configuration.
@@ -426,8 +432,8 @@ func (c *Config) Validate() error {
 	}
 
 	switch c.Prune.Strategy {
-	case "none":
-	case "keep_last":
+	case PrunerStrategyNone:
+	case PrunerStrategyKeepLast:
 		if c.Prune.Interval < 1*time.Second {
 			return fmt.Errorf("prune.interval must be >= 1 second")
 		}
@@ -457,17 +463,21 @@ func (c *Config) validateNetworking() error {
 		proto string
 		port  uint16
 	}
-	const anyIP = "0.0.0.0"
+	const (
+		anyIP      = "0.0.0.0"
+		networkTCP = "tcp"
+		networkUDP = "udp"
+	)
 	usedPorts := make(map[usedPort]map[string]struct{})
 	for _, rt := range c.Runtimes {
 		for _, comp := range rt.Components {
 			for _, compNet := range comp.Networking.Incoming {
 				var proto string
 				switch compNet.Protocol {
-				case "tcp", "udp":
+				case networkTCP, networkUDP:
 					proto = compNet.Protocol
 				case "":
-					proto = "tcp"
+					proto = networkTCP
 				default:
 					return fmt.Errorf("component %s: network protocol '%s' not supported", comp.ID, compNet.Protocol)
 				}
@@ -524,7 +534,7 @@ func DefaultConfig() Config {
 		SGXLoader:     "",
 		Environment:   RuntimeEnvironmentAuto,
 		Prune: PruneConfig{
-			Strategy: "none",
+			Strategy: PrunerStrategyNone,
 			Interval: 2 * time.Minute,
 			NumKept:  250_000,
 		},

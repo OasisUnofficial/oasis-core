@@ -6,13 +6,16 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 )
 
+// labelRuntime is the label for the runtime identifier.
+const labelRuntime = "runtime"
+
 var (
 	storageWorkerLastFullRound = prometheus.NewGaugeVec(
 		prometheus.GaugeOpts{
 			Name: "oasis_worker_storage_full_round",
 			Help: "The last round that was fully synced and finalized.",
 		},
-		[]string{"runtime"},
+		[]string{labelRuntime},
 	)
 
 	storageWorkerLastSyncedRound = prometheus.NewGaugeVec(
@@ -20,7 +23,7 @@ var (
 			Name: "oasis_worker_storage_synced_round",
 			Help: "The last round that was synced but not yet finalized.",
 		},
-		[]string{"runtime"},
+		[]string{labelRuntime},
 	)
 
 	storageWorkerLastPendingRound = prometheus.NewGaugeVec(
@@ -28,7 +31,7 @@ var (
 			Name: "oasis_worker_storage_pending_round",
 			Help: "The last round that is in-flight for syncing.",
 		},
-		[]string{"runtime"},
+		[]string{labelRuntime},
 	)
 
 	storageWorkerRoundSyncLatency = prometheus.NewSummaryVec(
@@ -36,7 +39,7 @@ var (
 			Name: "oasis_worker_storage_round_sync_latency",
 			Help: "Storage round sync latency (seconds).",
 		},
-		[]string{"runtime"},
+		[]string{labelRuntime},
 	)
 
 	storageWorkerPruneLatency = prometheus.NewSummaryVec(
@@ -44,7 +47,7 @@ var (
 			Name: "oasis_worker_storage_prune_latency",
 			Help: "Storage pruner per-round latency (seconds).",
 		},
-		[]string{"runtime"},
+		[]string{labelRuntime},
 	)
 
 	storageWorkerCollectors = []prometheus.Collector{

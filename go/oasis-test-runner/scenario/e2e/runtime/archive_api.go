@@ -286,14 +286,14 @@ func (sc *archiveAPI) testArchiveAPI(ctx context.Context, archiveCtrl *oasis.Con
 	rsp, err := sc.submitKeyValueRuntimeGetQuery(
 		ctx,
 		KeyValueRuntimeID,
-		"my_key",
+		testKey,
 		roothash.RoundLatest,
 	)
 	if err != nil {
 		return fmt.Errorf("failed to query runtime: %w", err)
 	}
-	if rsp != "my_value" {
-		return fmt.Errorf("response does not have expected value (got: '%v', expected: '%v')", rsp, "my_value")
+	if rsp != testValue {
+		return fmt.Errorf("response does not have expected value (got: '%v', expected: '%v')", rsp, testValue)
 	}
 
 	return nil

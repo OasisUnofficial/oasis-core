@@ -11,15 +11,8 @@ import (
 	"github.com/oasisprotocol/oasis-core/go/common/logging"
 )
 
-const (
-	// PrunerStrategyNone is the name of the none pruner strategy.
-	PrunerStrategyNone = "none"
-	// PrunerStrategyKeepLast is the name of the keep last pruner strategy.
-	PrunerStrategyKeepLast = "keep_last"
-
-	// maxBatchSize is the maximum number of rounds to prune in one pass.
-	maxBatchSize = 64
-)
+// maxBatchSize is the maximum number of rounds to prune in one pass.
+const maxBatchSize = 64
 
 // PrunerFactory is the runtime history pruner factory interface.
 type PrunerFactory func(runtimeID common.Namespace, db *DB) (Pruner, error)

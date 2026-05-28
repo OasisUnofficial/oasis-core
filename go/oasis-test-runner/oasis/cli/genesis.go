@@ -22,7 +22,7 @@ func (g *GenesisHelpers) Check(
 	g.logger.Info("checking genesis file")
 
 	args := []string{
-		"genesis", "check",
+		genesis.CmdGenesis, genesis.CmdCheck,
 		"--" + flags.CfgGenesisFile, genesisFilePath,
 		"--" + flags.CfgDebugDontBlameOasis,
 		"--" + common.CfgDebugAllowTestKeys,
@@ -43,7 +43,7 @@ func (g *GenesisHelpers) Dump(
 	g.logger.Info("dumping network state to genesis file")
 
 	args := []string{
-		"genesis", "dump",
+		genesis.CmdGenesis, genesis.CmdDump,
 		"--" + stake.CfgHeight, "0",
 		"--" + flags.CfgGenesisFile, genesisFilePath,
 		"--" + grpc.CfgAddress, "unix:" + g.cfg.NodeSocketPath,
@@ -64,7 +64,7 @@ func (g *GenesisHelpers) Migrate(
 	g.logger.Info("migrating genesis file")
 
 	args := []string{
-		"genesis", "migrate",
+		genesis.CmdGenesis, genesis.CmdMigrate,
 		"--" + flags.CfgGenesisFile, genesisFilePath,
 		"--" + genesis.CfgNewGenesisFile, newGenesisFilePath,
 		"--" + flags.CfgDebugDontBlameOasis,

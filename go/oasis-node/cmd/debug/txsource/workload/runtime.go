@@ -23,8 +23,13 @@ import (
 	staking "github.com/oasisprotocol/oasis-core/go/staking/api"
 )
 
-// NameRuntime is the name of the runtime workload.
-const NameRuntime = "runtime"
+const (
+	// NameRuntime is the name of the runtime workload.
+	NameRuntime = "runtime"
+
+	// methodInsert is the method name for insert operations.
+	methodInsert = "insert"
+)
 
 // Runtime is the runtime workload.
 var Runtime = &runtime{
@@ -174,7 +179,7 @@ func (r *runtime) validateEvents(ctx context.Context, rtc runtimeClient.RuntimeC
 
 	var expectedEventCount int
 	switch op {
-	case "insert":
+	case methodInsert:
 		expectedEventCount = 3
 	default:
 		expectedEventCount = 2
@@ -199,7 +204,7 @@ func (r *runtime) validateEvents(ctx context.Context, rtc runtimeClient.RuntimeC
 				return fmt.Errorf("unexpected kv_key event value (expected: %s got: %s)", key, string(ev.Value))
 			}
 		case "kv_insertion." + key:
-			if op != "insert" {
+			if op != methodInsert {
 				return fmt.Errorf("unexpected kv_insertion.* event for op '%s'", op)
 			}
 		default:
@@ -248,7 +253,7 @@ func (r *runtime) doInsertRequest(ctx context.Context, rng *rand.Rand, rtc runti
 	// Submit request.
 	req := &TxnCall{
 		Sender: randomSender(rng),
-		Method: "insert",
+		Method: methodInsert,
 		Args: struct {
 			Key   string `json:"key"`
 			Value string `json:"value"`
@@ -277,7 +282,7 @@ func (r *runtime) doInsertRequest(ctx context.Context, rng *rand.Rand, rtc runti
 		return fmt.Errorf("invalid response: %w", err)
 	}
 
-	if err := r.validateEvents(ctx, rtc, round, "insert", key); err != nil {
+	if err := r.validateEvents(ctx, rtc, round, methodInsert, key); err != nil {
 		return err
 	}
 
@@ -400,7 +405,7 @@ func (r *runtime) doInMsgRequest(ctx context.Context, rng *rand.Rand, _ runtimeC
 		Tag: 42,
 		Data: cbor.Marshal(&TxnCall{
 			Sender: randomSender(rng),
-			Method: "insert",
+			Method: methodInsert,
 			Args: struct {
 				Key   string `json:"key"`
 				Value string `json:"value"`

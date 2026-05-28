@@ -23,36 +23,49 @@ import (
 	staking "github.com/oasisprotocol/oasis-core/go/staking/api"
 )
 
-const CfgDataDir = "datadir"
+const (
+	// CmdIdentity is the identity subcommand.
+	CmdIdentity = "identity"
+	// CmdIniti is the init subcommand.
+	CmdInit = "init"
+	// CmdShowSentryPubkey is the show-sentry-client-pubkey subcommand.
+	CmdShowSentryPubkey = "show-sentry-client-pubkey"
+	// CmdShowTLSPubkey is the show-tls-pubkey subcommand.
+	CmdShowTLSPubkey = "show-tls-pubkey"
+	// CmdShowAddress is the show-address subcommand.
+	CmdShowAddress = "show-address"
+
+	CfgDataDir = "datadir"
+)
 
 var (
 	datadirFlags = flag.NewFlagSet("", flag.ContinueOnError)
 
 	identityCmd = &cobra.Command{
-		Use:   "identity",
+		Use:   CmdIdentity,
 		Short: "identity interface utilities",
 	}
 
 	identityInitCmd = &cobra.Command{
-		Use:   "init",
+		Use:   CmdInit,
 		Short: "initialize node identity",
 		Run:   doNodeInit,
 	}
 
 	identityShowSentryPubkeyCmd = &cobra.Command{
-		Use:   "show-sentry-client-pubkey",
+		Use:   CmdShowSentryPubkey,
 		Short: "outputs node's sentry control client tls public key",
 		Run:   doShowSentryTLSPubkey,
 	}
 
 	identityShowTLSPubkeyCmd = &cobra.Command{
-		Use:   "show-tls-pubkey",
+		Use:   CmdShowTLSPubkey,
 		Short: "outputs node's endpoint tls public key",
 		Run:   doShowTLSPubkey,
 	}
 
 	identityShowAddressCmd = &cobra.Command{
-		Use:   "show-address",
+		Use:   CmdShowAddress,
 		Short: "outputs node's address",
 		Run:   doShowAddress,
 	}

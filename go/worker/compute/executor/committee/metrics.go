@@ -8,55 +8,58 @@ import (
 	"github.com/oasisprotocol/oasis-core/go/oasis-node/cmd/common/metrics"
 )
 
+// labelRuntime is the label for the runtime identifier.
+const labelRuntime = "runtime"
+
 var (
 	processedEventCount = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
 			Name: "oasis_worker_processed_event_count",
 			Help: "Number of processed roothash events.",
 		},
-		[]string{"runtime"},
+		[]string{labelRuntime},
 	)
 	discrepancyDetectedCount = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
 			Name: "oasis_worker_execution_discrepancy_detected_count",
 			Help: "Number of detected execute discrepancies.",
 		},
-		[]string{"runtime"},
+		[]string{labelRuntime},
 	)
 	abortedBatchCount = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
 			Name: "oasis_worker_aborted_batch_count",
 			Help: "Number of aborted batches.",
 		},
-		[]string{"runtime"},
+		[]string{labelRuntime},
 	)
 	storageCommitLatency = prometheus.NewSummaryVec(
 		prometheus.SummaryOpts{
 			Name: "oasis_worker_storage_commit_latency",
 			Help: "Latency of storage commit calls (state + outputs) (seconds).",
 		},
-		[]string{"runtime"},
+		[]string{labelRuntime},
 	)
 	batchProcessingTime = prometheus.NewSummaryVec(
 		prometheus.SummaryOpts{
 			Name: "oasis_worker_batch_processing_time",
 			Help: "Time it takes for a batch to finalize (seconds).",
 		},
-		[]string{"runtime"},
+		[]string{labelRuntime},
 	)
 	batchRuntimeProcessingTime = prometheus.NewSummaryVec(
 		prometheus.SummaryOpts{
 			Name: "oasis_worker_batch_runtime_processing_time",
 			Help: "Time it takes for a batch to be processed by the runtime (seconds).",
 		},
-		[]string{"runtime"},
+		[]string{labelRuntime},
 	)
 	batchSize = prometheus.NewSummaryVec(
 		prometheus.SummaryOpts{
 			Name: "oasis_worker_batch_size",
 			Help: "Number of transactions in a batch.",
 		},
-		[]string{"runtime"},
+		[]string{labelRuntime},
 	)
 	nodeCollectors = []prometheus.Collector{
 		processedEventCount,
@@ -73,7 +76,7 @@ var (
 
 func (n *Node) getMetricLabels() prometheus.Labels {
 	return prometheus.Labels{
-		"runtime": n.commonNode.Runtime.ID().String(),
+		labelRuntime: n.commonNode.Runtime.ID().String(),
 	}
 }
 

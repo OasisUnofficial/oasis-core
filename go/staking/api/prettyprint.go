@@ -52,7 +52,7 @@ func FormatAddressWith(names AccountNames, addr Address) string {
 func PrettyPrintCommissionRatePercentage(rateNumerator quantity.Quantity) string {
 	// Handle invalid commission rate (bound) numerator.
 	if rateNumerator.Cmp(CommissionRateDenominator) > 0 {
-		return "(invalid)"
+		return prettyprint.QuantityInvalidText
 	}
 	// Reduce commission rate denominator's base-10 exponent by 2 to obtain the
 	// value in percentage.

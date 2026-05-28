@@ -6,15 +6,16 @@ import (
 	"time"
 
 	tlsCert "github.com/oasisprotocol/oasis-core/go/common/crypto/tls"
-	"github.com/oasisprotocol/oasis-core/go/common/pubsub"
-	"github.com/oasisprotocol/oasis-core/go/worker/common/api"
-
 	"github.com/oasisprotocol/oasis-core/go/common/identity"
+	"github.com/oasisprotocol/oasis-core/go/common/pubsub"
 	consensusAPI "github.com/oasisprotocol/oasis-core/go/consensus/api"
+	"github.com/oasisprotocol/oasis-core/go/oasis-node/cmd/common/grpc"
+	"github.com/oasisprotocol/oasis-core/go/oasis-node/cmd/control"
 	"github.com/oasisprotocol/oasis-core/go/oasis-test-runner/env"
 	"github.com/oasisprotocol/oasis-core/go/oasis-test-runner/oasis"
 	"github.com/oasisprotocol/oasis-core/go/oasis-test-runner/oasis/cli"
 	"github.com/oasisprotocol/oasis-core/go/oasis-test-runner/scenario"
+	"github.com/oasisprotocol/oasis-core/go/worker/common/api"
 )
 
 // NodeShutdown is the keymanager restart scenario.
@@ -100,8 +101,8 @@ func (sc *nodeShutdownImpl) Run(ctx context.Context, childEnv *env.Env) error { 
 
 	sc.Logger.Info("requesting node shutdown")
 	args := []string{
-		"control", "shutdown",
-		"--address", "unix:" + computeWorker.SocketPath(),
+		control.CmdControl, control.CmdShutdown,
+		"--" + grpc.CfgAddress, "unix:" + computeWorker.SocketPath(),
 	}
 	if err = cli.RunSubCommand(childEnv, sc.Logger, "control-shutdown", sc.Net.Config().NodeBinary, args); err != nil {
 		return fmt.Errorf("scenario/e2e/node_shutdown: send request failed: %w", err)
@@ -128,8 +129,8 @@ func (sc *nodeShutdownImpl) Run(ctx context.Context, childEnv *env.Env) error { 
 
 	sc.Logger.Info("requesting client node shutdown")
 	args = []string{
-		"control", "shutdown",
-		"--address", "unix:" + clientNode.SocketPath(),
+		control.CmdControl, control.CmdShutdown,
+		"--" + grpc.CfgAddress, "unix:" + clientNode.SocketPath(),
 	}
 	if err = cli.RunSubCommand(childEnv, sc.Logger, "control-shutdown", sc.Net.Config().NodeBinary, args); err != nil {
 		return fmt.Errorf("scenario/e2e/node_shutdown: send request to client node failed: %w", err)
@@ -216,7 +217,7 @@ func (sc *nodeShutdownImpl) Run(ctx context.Context, childEnv *env.Env) error { 
 	sc.Logger.Info("requesting node shutdown")
 	args = []string{
 		"control", "shutdown",
-		"--address", "unix:" + computeWorker.SocketPath(),
+		"--" + grpc.CfgAddress, "unix:" + computeWorker.SocketPath(),
 	}
 	if err = cli.RunSubCommand(childEnv, sc.Logger, "control-shutdown", sc.Net.Config().NodeBinary, args); err != nil {
 		return fmt.Errorf("scenario/e2e/node_shutdown: send request failed: %w", err)

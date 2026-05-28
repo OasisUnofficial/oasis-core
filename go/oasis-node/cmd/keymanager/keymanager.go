@@ -49,6 +49,19 @@ const (
 	CfgStatusRSK         = "keymanager.status.rsk"
 
 	statusFilename = "km_status.json"
+
+	// CmdKeymanager is the keymanager subcommand.
+	CmdKeymanager = "keymanager"
+	// CmdInitPolicy is the init_policy subcommand.
+	CmdInitPolicy = "init_policy"
+	// CmdSignPolicy is the sign_policy subcommand.
+	CmdSignPolicy = "sign_policy"
+	// CmdVerifyPolicy is the verify_policy subcommand.
+	CmdVerifyPolicy = "verify_policy"
+	// CmdInitStatus is the init_status subcommand.
+	CmdInitStatus = "init_status"
+	// CmdGenUpdate is the gen_update subcommand.
+	CmdGenUpdate = "gen_update"
 )
 
 var (
@@ -56,44 +69,44 @@ var (
 	policySigFileFlag = flag.NewFlagSet("", flag.ContinueOnError)
 
 	keyManagerCmd = &cobra.Command{
-		Use:        "keymanager",
+		Use:        CmdKeymanager,
 		Short:      "keymanager utilities",
-		Deprecated: "use the `oasis` CLI instead.",
+		Deprecated: "use the `oasis` CLI instead.", //nolint:goconst
 	}
 
 	initPolicyCmd = &cobra.Command{
-		Use:        "init_policy",
+		Use:        CmdInitPolicy,
 		Short:      "generate keymanager policy file",
 		Run:        doInitPolicy,
-		Deprecated: "use the `oasis` CLI instead.",
+		Deprecated: "use the `oasis` CLI instead.", //nolint:goconst
 	}
 
 	signPolicyCmd = &cobra.Command{
-		Use:        "sign_policy",
+		Use:        CmdSignPolicy,
 		Short:      "sign keymanager policy file",
 		Run:        doSignPolicy,
-		Deprecated: "use the `oasis` CLI instead.",
+		Deprecated: "use the `oasis` CLI instead.", //nolint:goconst
 	}
 
 	verifyPolicyCmd = &cobra.Command{
-		Use:        "verify_policy",
+		Use:        CmdVerifyPolicy,
 		Short:      "verify keymanager policy file and (optionally) its signature",
 		Run:        doVerifyPolicy,
-		Deprecated: "use the `oasis` CLI instead.",
+		Deprecated: "use the `oasis` CLI instead.", //nolint:goconst
 	}
 
 	initStatusCmd = &cobra.Command{
-		Use:        "init_status",
+		Use:        CmdInitStatus,
 		Short:      "generate keymanager status file",
 		Run:        doInitStatus,
-		Deprecated: "use the `oasis` CLI instead.",
+		Deprecated: "use the `oasis` CLI instead.", //nolint:goconst
 	}
 
 	genUpdateCmd = &cobra.Command{
-		Use:        "gen_update",
+		Use:        CmdGenUpdate,
 		Short:      "generate a update transaction",
 		Run:        doGenUpdate,
-		Deprecated: "use the `oasis` CLI instead.",
+		Deprecated: "use the `oasis` CLI instead.", //nolint:goconst
 	}
 
 	logger = logging.GetLogger("cmd/keymanager")

@@ -286,7 +286,7 @@ func (sc *kmEphemeralSecretsImpl) Run(ctx context.Context, _ *env.Env) error { /
 	// Successful encryption indicates that the key manager generated
 	// an ephemeral public key.
 	sc.Logger.Info("encrypting plaintext")
-	sender := "sender"
+	const sender = "sender"
 	ciphertext, err := sc.submitKeyValueRuntimeEncryptTx(
 		ctx,
 		sender,

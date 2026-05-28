@@ -791,15 +791,15 @@ func (net *Network) startOasisNode(
 // MakeGenesis generates a new Genesis file.
 func (net *Network) MakeGenesis() error {
 	args := []string{
-		"genesis", "init",
+		genesis.CmdGenesis, genesis.CmdInit,
 		"--" + cmdFlags.CfgGenesisFile, net.GenesisPath(),
 		"--" + genesis.CfgChainID, genesisTestHelpers.TestChainID,
 		"--" + genesis.CfgInitialHeight, strconv.FormatInt(net.cfg.InitialHeight, 10),
 		"--" + genesis.CfgConsensusBackend, net.cfg.Consensus.Backend,
 		"--" + genesis.CfgConsensusTimeoutCommit, net.cfg.Consensus.Parameters.TimeoutCommit.String(),
 		"--" + genesis.CfgRegistryEnableRuntimeGovernanceModels, "entity,runtime",
-		"--" + genesis.CfgRegistryDebugAllowUnroutableAddresses, "true",
-		"--" + genesis.CfgRegistryDebugAllowTestRuntimes, "true",
+		"--" + genesis.CfgRegistryDebugAllowUnroutableAddresses, "true", //nolint:goconst
+		"--" + genesis.CfgRegistryDebugAllowTestRuntimes, "true", //nolint:goconst
 		"--" + genesis.CfgSchedulerMaxValidatorsPerEntity, strconv.Itoa(len(net.Validators())),
 		"--" + genesis.CfgConsensusGasCostsTxByte, strconv.FormatUint(uint64(net.cfg.Consensus.Parameters.GasCosts[consensusGenesis.GasOpTxByte]), 10),
 		"--" + genesis.CfgConsensusStateCheckpointInterval, strconv.FormatUint(net.cfg.Consensus.Parameters.StateCheckpointInterval, 10),
@@ -822,7 +822,7 @@ func (net *Network) MakeGenesis() error {
 		}...)
 		if net.cfg.SchedulerWeakAlphaOk {
 			args = append(args, []string{
-				"--" + genesis.CfgSchedulerDebugAllowWeakAlpha, "true",
+				"--" + genesis.CfgSchedulerDebugAllowWeakAlpha, "true", //nolint:goconst
 			}...)
 		}
 	default:

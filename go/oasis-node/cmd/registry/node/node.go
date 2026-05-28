@@ -54,28 +54,28 @@ var (
 	nodeCmd = &cobra.Command{
 		Use:        "node",
 		Short:      "node registry backend utilities",
-		Deprecated: "use the `oasis` CLI instead.",
+		Deprecated: "use the `oasis` CLI instead.", //nolint:goconst
 	}
 
 	initCmd = &cobra.Command{
 		Use:        "init",
 		Short:      "initialize a node",
 		Run:        doInit,
-		Deprecated: "use the `oasis` CLI instead.",
+		Deprecated: "use the `oasis` CLI instead.", //nolint:goconst
 	}
 
 	listCmd = &cobra.Command{
 		Use:        "list",
 		Short:      "list registered nodes",
 		Run:        doList,
-		Deprecated: "use the `oasis` CLI instead.",
+		Deprecated: "use the `oasis` CLI instead.", //nolint:goconst
 	}
 
 	isRegisteredCmd = &cobra.Command{
 		Use:        "is-registered",
 		Short:      "check whether the node is registered",
 		Run:        doIsRegistered,
-		Deprecated: "use the `oasis` CLI instead.",
+		Deprecated: "use the `oasis` CLI instead.", //nolint:goconst
 	}
 
 	logger = logging.GetLogger("cmd/registry/node")

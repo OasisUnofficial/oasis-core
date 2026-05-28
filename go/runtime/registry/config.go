@@ -14,6 +14,7 @@ import (
 	cmdFlags "github.com/oasisprotocol/oasis-core/go/oasis-node/cmd/common/flags"
 	"github.com/oasisprotocol/oasis-core/go/runtime/bundle"
 	"github.com/oasisprotocol/oasis-core/go/runtime/bundle/component"
+	rtConfig "github.com/oasisprotocol/oasis-core/go/runtime/config"
 	"github.com/oasisprotocol/oasis-core/go/runtime/history"
 )
 
@@ -91,9 +92,9 @@ func createHistoryFactory() (history.Factory, error) {
 	var pruneFactory history.PrunerFactory
 	strategy := config.GlobalConfig.Runtime.Prune.Strategy
 	switch strings.ToLower(strategy) {
-	case history.PrunerStrategyNone:
+	case rtConfig.PrunerStrategyNone:
 		pruneFactory = history.NewNonePrunerFactory()
-	case history.PrunerStrategyKeepLast:
+	case rtConfig.PrunerStrategyKeepLast:
 		numKept := config.GlobalConfig.Runtime.Prune.NumKept
 		pruneInterval := max(config.GlobalConfig.Runtime.Prune.Interval, time.Second)
 		pruneFactory = history.NewKeepLastPrunerFactory(numKept, pruneInterval)

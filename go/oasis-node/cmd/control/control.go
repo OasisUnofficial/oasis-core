@@ -19,66 +19,89 @@ import (
 	"github.com/oasisprotocol/oasis-core/go/worker/registration"
 )
 
+const (
+	// CmdControl is the control sub-command.
+	CmdControl = "control"
+	// CmdIsSynced is the is-synced sub-command.
+	CmdIsSynced = "is-synced"
+	// CmdWaitSync is the wait-sync sub-command.
+	CmdWaitSync = "wait-sync"
+	// CmdShutdown is the shutdown sub-command.
+	CmdShutdown = "shutdown"
+	// CmdClearDeregister is the clear-deregister sub-command.
+	CmdClearDeregister = "clear-deregister"
+	// CmdUpgradeBinary is the upgrade-binary sub-command.
+	CmdUpgradeBinary = "upgrade-binary"
+	// CmdCancelUpgrade is the cancel-upgrade sub-command.
+	CmdCancelUpgrade = "cancel-upgrade"
+	// CmdStatus is the status sub-command.
+	CmdStatus = "status"
+	// CmdRuntimeStats is the runtime-stats sub-command.
+	CmdRuntimeStats = "runtime-stats"
+	// CmdAddBundle is the add-bundle sub-command.
+	CmdAddBundle = "add-bundle"
+)
+
 var (
 	shutdownWait = false
 
 	controlCmd = &cobra.Command{
-		Use:   "control",
+		Use:   CmdControl,
 		Short: "node control interface utilities",
 	}
 
 	controlIsSyncedCmd = &cobra.Command{
-		Use:   "is-synced",
+		Use:   CmdIsSynced,
 		Short: "exit with 0 if the node completed initial syncing, 1 if not",
 		Run:   doIsSynced,
 	}
 
 	controlWaitSyncCmd = &cobra.Command{
-		Use:   "wait-sync",
+		Use:   CmdWaitSync,
 		Short: "wait for the node to complete initial syncing",
 		Run:   doWaitSync,
 	}
 
 	controlShutdownCmd = &cobra.Command{
-		Use:   "shutdown",
+		Use:   CmdShutdown,
 		Short: "request node shutdown on next epoch transition",
 		Run:   doShutdown,
 	}
 
 	controlClearDeregisterCmd = &cobra.Command{
-		Use:   "clear-deregister",
+		Use:   CmdClearDeregister,
 		Short: "clear the forced node deregistration flag",
 		Run:   doClearDeregister,
 	}
 
 	controlUpgradeBinaryCmd = &cobra.Command{
-		Use:   "upgrade-binary <upgrade-descriptor>",
+		Use:   CmdUpgradeBinary + " <upgrade-descriptor>",
 		Short: "submit an upgrade descriptor to the node and request shutdown",
 		Args:  cobra.ExactArgs(1),
 		Run:   doUpgradeBinary,
 	}
 
 	controlCancelUpgradeCmd = &cobra.Command{
-		Use:   "cancel-upgrade <upgrade-name>",
+		Use:   CmdCancelUpgrade + " <upgrade-name>",
 		Short: "cancel a pending upgrade unless it is already in progress",
 		Run:   doCancelUpgrade,
 	}
 
 	controlStatusCmd = &cobra.Command{
-		Use:   "status",
+		Use:   CmdStatus,
 		Short: "show node status",
 		Run:   doStatus,
 	}
 
 	controlRuntimeStatsCmd = &cobra.Command{
-		Use:        "runtime-stats <runtime-id> [<start-height> [<end-height>]]",
+		Use:        CmdRuntimeStats + " <runtime-id> [<start-height> [<end-height>]]",
 		Short:      "show runtime statistics",
 		Run:        doRuntimeStats,
 		Deprecated: "use the `oasis` CLI instead.",
 	}
 
 	controlAddBundleCmd = &cobra.Command{
-		Use:   "add-bundle <path>",
+		Use:   CmdAddBundle + " <path>",
 		Short: "adds runtime components from the bundle",
 		Run:   doAddBundle,
 	}

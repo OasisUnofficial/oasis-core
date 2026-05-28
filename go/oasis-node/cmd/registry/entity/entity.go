@@ -46,42 +46,42 @@ var (
 	entityCmd = &cobra.Command{
 		Use:        "entity",
 		Short:      "entity registry backend utilities",
-		Deprecated: "use the `oasis` CLI instead.",
+		Deprecated: "use the `oasis` CLI instead.", //nolint:goconst
 	}
 
 	initCmd = &cobra.Command{
 		Use:        "init",
 		Short:      "initialize an entity",
 		Run:        doInit,
-		Deprecated: "use the `oasis` CLI instead.",
+		Deprecated: "use the `oasis` CLI instead.", //nolint:goconst
 	}
 
 	updateCmd = &cobra.Command{
 		Use:        "update",
 		Short:      "update an entity",
 		Run:        doUpdate,
-		Deprecated: "use the `oasis` CLI instead.",
+		Deprecated: "use the `oasis` CLI instead.", //nolint:goconst
 	}
 
 	registerCmd = &cobra.Command{
 		Use:        "gen_register",
 		Short:      "generate a register entity transaction",
 		Run:        doGenRegister,
-		Deprecated: "use the `oasis` CLI instead.",
+		Deprecated: "use the `oasis` CLI instead.", //nolint:goconst
 	}
 
 	deregisterCmd = &cobra.Command{
 		Use:        "gen_deregister",
 		Short:      "generate a deregister entity transaction",
 		Run:        doGenDeregister,
-		Deprecated: "use the `oasis` CLI instead.",
+		Deprecated: "use the `oasis` CLI instead.", //nolint:goconst
 	}
 
 	listCmd = &cobra.Command{
 		Use:        "list",
 		Short:      "list registered entities",
 		Run:        doList,
-		Deprecated: "use the `oasis` CLI instead.",
+		Deprecated: "use the `oasis` CLI instead.", //nolint:goconst
 	}
 
 	logger = logging.GetLogger("cmd/registry/entity")

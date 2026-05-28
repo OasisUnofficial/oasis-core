@@ -1,6 +1,11 @@
 // Package config implements global configuration options.
 package config
 
+const (
+	logLevelInfo  = "info"
+	logLevelError = "error"
+)
+
 // Config is the common configuration structure.
 type Config struct {
 	// Node's data directory.
@@ -44,10 +49,10 @@ func DefaultConfig() Config {
 			File:   "",
 			Format: "logfmt",
 			Level: map[string]string{
-				"cometbft/context":  "error", // Too verbose by default.
-				"cometbft/db":       "info",  // Debug logs are too verbose and not very useful.
-				"common/persistent": "info",  // Debug logs are too verbose and not very useful.
-				"mkvs/db":           "info",  // Debug logs are too verbose and not very useful.
+				"cometbft/context":  logLevelError, // Too verbose by default.
+				"cometbft/db":       logLevelInfo,  // Debug logs are too verbose and not very useful.
+				"common/persistent": logLevelInfo,  // Debug logs are too verbose and not very useful.
+				"mkvs/db":           logLevelInfo,  // Debug logs are too verbose and not very useful.
 			},
 		},
 		Debug: DebugConfig{

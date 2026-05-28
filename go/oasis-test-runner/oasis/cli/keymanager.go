@@ -12,6 +12,7 @@ import (
 	cmdCommon "github.com/oasisprotocol/oasis-core/go/oasis-node/cmd/common"
 	cmdConsensus "github.com/oasisprotocol/oasis-core/go/oasis-node/cmd/common/consensus"
 	"github.com/oasisprotocol/oasis-core/go/oasis-node/cmd/common/flags"
+	"github.com/oasisprotocol/oasis-core/go/oasis-node/cmd/keymanager"
 	cmdKM "github.com/oasisprotocol/oasis-core/go/oasis-node/cmd/keymanager"
 )
 
@@ -30,7 +31,7 @@ func (k *KeymanagerHelpers) InitPolicy(runtimeID common.Namespace, serial uint32
 	)
 
 	args := []string{
-		"keymanager", "init_policy",
+		keymanager.CmdKeymanager, keymanager.CmdInitPolicy,
 		"--" + cmdKM.CfgPolicyFile, polPath,
 		"--" + cmdKM.CfgPolicyID, runtimeID.String(),
 		"--" + cmdKM.CfgPolicySerial, strconv.FormatUint(uint64(serial), 10),
@@ -73,7 +74,7 @@ func (k *KeymanagerHelpers) SignPolicy(testKey, polPath, polSigPath string) erro
 	)
 
 	args := []string{
-		"keymanager", "sign_policy",
+		keymanager.CmdKeymanager, keymanager.CmdSignPolicy,
 		"--" + flags.CfgDebugDontBlameOasis,
 		"--" + cmdCommon.CfgDebugAllowTestKeys,
 		"--" + cmdKM.CfgPolicyFile, polPath,
@@ -95,7 +96,7 @@ func (k *KeymanagerHelpers) GenUpdate(nonce uint64, polPath string, polSigPaths 
 	)
 
 	args := []string{
-		"keymanager", "gen_update",
+		keymanager.CmdKeymanager, keymanager.CmdGenUpdate,
 		"--" + cmdConsensus.CfgTxNonce, strconv.FormatUint(nonce, 10),
 		"--" + cmdConsensus.CfgTxFile, txPath,
 		"--" + cmdConsensus.CfgTxFeeAmount, strconv.Itoa(0), // TODO: Make fee configurable.

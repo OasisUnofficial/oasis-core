@@ -14,15 +14,15 @@ import (
 
 var (
 	insertEncWithChurpScenario = NewTestClientScenario([]any{
-		InsertKeyValueTx{"my_key", "my_value", "", 0, 0, encryptedWithChurpTxKind},
-		GetKeyValueTx{"my_key", "my_value", 0, 0, encryptedWithChurpTxKind},
-		RemoveKeyValueTx{"my_key", "my_value", 0, 0, encryptedWithChurpTxKind},
-		GetKeyValueTx{"my_key", "", 0, 0, encryptedWithChurpTxKind},
-		InsertKeyValueTx{"my_key", "my_value", "", 0, 0, encryptedWithChurpTxKind},
+		InsertKeyValueTx{testKey, testValue, "", 0, 0, encryptedWithChurpTxKind},
+		GetKeyValueTx{testKey, testValue, 0, 0, encryptedWithChurpTxKind},
+		RemoveKeyValueTx{testKey, testValue, 0, 0, encryptedWithChurpTxKind},
+		GetKeyValueTx{testKey, "", 0, 0, encryptedWithChurpTxKind},
+		InsertKeyValueTx{testKey, testValue, "", 0, 0, encryptedWithChurpTxKind},
 	})
 
 	getEncWithChurpScenario = NewTestClientScenario([]any{
-		GetKeyValueTx{"my_key", "my_value", 0, 0, encryptedWithChurpTxKind},
+		GetKeyValueTx{testKey, testValue, 0, 0, encryptedWithChurpTxKind},
 	})
 )
 

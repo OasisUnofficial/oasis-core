@@ -8,6 +8,8 @@ import (
 	"path"
 
 	beacon "github.com/oasisprotocol/oasis-core/go/beacon/api"
+	"github.com/oasisprotocol/oasis-core/go/oasis-node/cmd/common/grpc"
+	"github.com/oasisprotocol/oasis-core/go/oasis-node/cmd/control"
 	"github.com/oasisprotocol/oasis-core/go/oasis-test-runner/env"
 	"github.com/oasisprotocol/oasis-core/go/oasis-test-runner/oasis"
 	"github.com/oasisprotocol/oasis-core/go/oasis-test-runner/oasis/cli"
@@ -110,9 +112,9 @@ func (sc *nodeUpgradeCancelImpl) Run(ctx context.Context, childEnv *env.Env) err
 	}
 
 	submitArgs := []string{
-		"control", "upgrade-binary",
-		"--wait",
-		"--address", "unix:" + val.SocketPath(),
+		control.CmdControl, control.CmdUpgradeBinary,
+		"--" + grpc.CfgWait,
+		"--" + grpc.CfgAddress, "unix:" + val.SocketPath(),
 		filePath,
 	}
 	if err = cli.RunSubCommand(childEnv, sc.Logger, "control-upgrade", sc.Net.Config().NodeBinary, submitArgs); err != nil {
@@ -125,9 +127,9 @@ func (sc *nodeUpgradeCancelImpl) Run(ctx context.Context, childEnv *env.Env) err
 
 	// Now cancel the upgrade.
 	cancelArgs := []string{
-		"control", "cancel-upgrade",
-		"--wait",
-		"--address", "unix:" + val.SocketPath(),
+		control.CmdControl, control.CmdCancelUpgrade,
+		"--" + grpc.CfgWait,
+		"--" + grpc.CfgAddress, "unix:" + val.SocketPath(),
 		filePath,
 	}
 	if err = cli.RunSubCommand(childEnv, sc.Logger, "control-upgrade", sc.Net.Config().NodeBinary, cancelArgs); err != nil {

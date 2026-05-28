@@ -16,6 +16,13 @@ import (
 	"github.com/oasisprotocol/oasis-core/go/runtime/client/api"
 )
 
+const (
+	sender0 = "sender-0"
+	sender1 = "sender-1"
+	sender2 = "sender-2"
+	sender3 = "sender-3"
+)
+
 // RuntimeTxs tests whether multiple transactions from the same sender
 // can be included in a single block.
 var RuntimeTxs scenario.Scenario = newRuntimeTxsImpl()
@@ -52,9 +59,9 @@ func (sc *runtimeTxsImpl) Run(ctx context.Context, _ *env.Env) error {
 	// Queue transactions with higher nonces which should not be included
 	// in a block until transactions with lower nonces are submitted.
 	batch := map[string][]uint64{
-		"sender-1": {1},
-		"sender-2": {1, 2},
-		"sender-3": {1, 2, 3},
+		sender1: {1},
+		sender2: {1, 2},
+		sender3: {1, 2, 3},
 	}
 	group, gctx := errgroup.WithContext(ctx)
 	group.Go(func() error {
@@ -68,10 +75,10 @@ func (sc *runtimeTxsImpl) Run(ctx context.Context, _ *env.Env) error {
 
 	// Queue missing transactions.
 	batch = map[string][]uint64{
-		"sender-0": {0},
-		"sender-1": {0},
-		"sender-2": {0},
-		"sender-3": {0},
+		sender0: {0},
+		sender1: {0},
+		sender2: {0},
+		sender3: {0},
 	}
 	rounds, err := sc.submitTxs(ctx, batch)
 	if err != nil {
@@ -101,10 +108,10 @@ func (sc *runtimeTxsImpl) Run(ctx context.Context, _ *env.Env) error {
 
 	// Verify state.
 	expectedValues := map[string]string{
-		"sender-0": "0",
-		"sender-1": "1",
-		"sender-2": "2",
-		"sender-3": "3",
+		sender0: "0",
+		sender1: "1",
+		sender2: "2",
+		sender3: "3",
 	}
 	for sender, expected := range expectedValues {
 		value, err := sc.submitKeyValueRuntimeGetQuery(ctx, KeyValueRuntimeID, sender, api.RoundLatest)

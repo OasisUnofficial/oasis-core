@@ -23,6 +23,17 @@ import (
 )
 
 const (
+	// CmdConsensus is the consensus subcommand.
+	CmdConsensus = "consensus"
+	// CmdSubmitTx is the submit_tx subcommand.
+	CmdSubmitTx = "submit_tx"
+	// CmdShowTx is the show_tx subcommand.
+	CmdShowTx = "show_tx"
+	// CmdEstimateGas is the estimate_gas subcommand.
+	CmdEstimateGas = "estimate_gas"
+	// CmdNextBlockState is the next_block_state subcommand.
+	CmdNextBlockState = "next_block_state"
+
 	// CfgSignerPub is the public key of the account that will sign an unsigned transaction in estimate gas.
 	CfgSignerPub = "consensus.signer_pub"
 )
@@ -31,36 +42,36 @@ var (
 	signerPub string
 
 	consensusCmd = &cobra.Command{
-		Use:        "consensus",
+		Use:        CmdConsensus,
 		Short:      "consensus backend commands",
-		Deprecated: "use the `oasis` CLI instead.",
+		Deprecated: "use the `oasis` CLI instead.", //nolint:goconst
 	}
 
 	submitTxCmd = &cobra.Command{
-		Use:        "submit_tx",
+		Use:        CmdSubmitTx,
 		Short:      "Submit a pre-signed transaction",
 		Run:        doSubmitTx,
-		Deprecated: "use the `oasis` CLI instead.",
+		Deprecated: "use the `oasis` CLI instead.", //nolint:goconst
 	}
 
 	showTxCmd = &cobra.Command{
-		Use:        "show_tx",
+		Use:        CmdShowTx,
 		Short:      "Show the content a pre-signed transaction",
 		Run:        doShowTx,
-		Deprecated: "use the `oasis` CLI instead.",
+		Deprecated: "use the `oasis` CLI instead.", //nolint:goconst
 	}
 
 	estimateGasCmd = &cobra.Command{
-		Use:        "estimate_gas",
+		Use:        CmdEstimateGas,
 		Short:      "Estimate how much gas a transaction will use",
 		Run:        doEstimateGas,
-		Deprecated: "use the `oasis` CLI instead.",
+		Deprecated: "use the `oasis` CLI instead.", //nolint:goconst
 	}
 
 	nextBlockStateCmd = &cobra.Command{
-		Use:        "next_block_state",
+		Use:        CmdNextBlockState,
 		Run:        doNextBlockState,
-		Deprecated: "use the `oasis` CLI instead.",
+		Deprecated: "use the `oasis` CLI instead.", //nolint:goconst
 	}
 
 	logger = logging.GetLogger("cmd/consensus")

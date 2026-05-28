@@ -30,28 +30,28 @@ var (
 	stakeCmd = &cobra.Command{
 		Use:        "stake",
 		Short:      "staking backend utilities",
-		Deprecated: "use the `oasis` CLI instead.",
+		Deprecated: "use the `oasis` CLI instead.", //nolint:goconst
 	}
 
 	infoCmd = &cobra.Command{
 		Use:        "info",
 		Short:      "query the common staking info",
 		Run:        doInfo,
-		Deprecated: "use the `oasis` CLI instead.",
+		Deprecated: "use the `oasis` CLI instead.", //nolint:goconst
 	}
 
 	listCmd = &cobra.Command{
 		Use:        "list",
 		Short:      "list accounts",
 		Run:        doList,
-		Deprecated: "use the `oasis` CLI instead.",
+		Deprecated: "use the `oasis` CLI instead.", //nolint:goconst
 	}
 
 	pubkey2AddressCmd = &cobra.Command{
 		Use:        "pubkey2address",
 		Short:      "convert a public key (e.g. entity's ID) to an account address",
 		Run:        doPubkey2Address,
-		Deprecated: "use the `oasis` CLI instead.",
+		Deprecated: "use the `oasis` CLI instead.", //nolint:goconst
 	}
 
 	logger = logging.GetLogger("cmd/stake")

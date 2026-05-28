@@ -11,6 +11,7 @@ import (
 	"github.com/oasisprotocol/oasis-core/go/oasis-node/cmd/common"
 	"github.com/oasisprotocol/oasis-core/go/oasis-node/cmd/common/flags"
 	cmdSigner "github.com/oasisprotocol/oasis-core/go/oasis-node/cmd/common/signer"
+	"github.com/oasisprotocol/oasis-core/go/oasis-node/cmd/registry"
 	cmdEntity "github.com/oasisprotocol/oasis-core/go/oasis-node/cmd/registry/entity"
 	"github.com/oasisprotocol/oasis-core/go/oasis-test-runner/env"
 )
@@ -107,7 +108,7 @@ func (ent *Entity) update() error {
 	}
 
 	args := []string{
-		"registry", "entity", "update",
+		registry.CmdRegistry, registry.CmdEntity, registry.CmdUpdate,
 		"--" + cmdSigner.CfgSigner, fileSigner.SignerName,
 		"--" + cmdSigner.CfgCLISignerDir, ent.dir.String(),
 	}
@@ -175,7 +176,7 @@ func (net *Network) NewEntity(cfg *EntityCfg) (*Entity, error) {
 		default:
 			// Generate a fresh new entity.
 			args := []string{
-				"registry", "entity", "init",
+				registry.CmdRegistry, registry.CmdEntity, registry.CmdInit,
 				"--" + cmdSigner.CfgSigner, fileSigner.SignerName,
 				"--" + cmdSigner.CfgCLISignerDir, entityDir.String(),
 			}

@@ -126,8 +126,8 @@ func (h *lbHost) Call(ctx context.Context, body *protocol.Body) (*protocol.Body,
 		}
 
 		lbRequestCount.With(prometheus.Labels{
-			"runtime":     h.id.String(),
-			"lb_instance": fmt.Sprintf("%d", idx),
+			labelRuntime:    h.id.String(),
+			labelLBInstance: fmt.Sprintf("%d", idx),
 		}).Inc()
 
 		return h.instances[idx].Call(ctx, body)

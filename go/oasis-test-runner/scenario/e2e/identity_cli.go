@@ -52,7 +52,7 @@ func (sc *identityCLIImpl) Fixture() (*oasis.NetworkFixture, error) {
 func (sc *identityCLIImpl) Run(_ context.Context, childEnv *env.Env) error {
 	// Provision node's identity.
 	args := []string{
-		"identity", "init",
+		cmdId.CmdIdentity, cmdId.CmdInit,
 		"--" + cmdId.CfgDataDir, sc.dataDir,
 	}
 	nodeBinary, _ := sc.Flags.GetString(cfgNodeBinary)
@@ -103,7 +103,7 @@ func (sc *identityCLIImpl) showTLSPubkey(childEnv *env.Env, sentry bool) error {
 	sc.Logger.Info(fmt.Sprintf("running %s", subCmd))
 
 	args := []string{
-		"identity", subCmd,
+		cmdId.CmdIdentity, subCmd,
 		"--" + cmdId.CfgDataDir, sc.dataDir,
 	}
 	nodeBinary, _ := sc.Flags.GetString(cfgNodeBinary)
@@ -118,7 +118,7 @@ func (sc *identityCLIImpl) cmtShowAddress(childEnv *env.Env, addrName string) er
 	sc.Logger.Info(fmt.Sprintf("running CometBFT %s", subCmd))
 
 	args := []string{
-		"identity", "cometbft", subCmd,
+		cmdId.CmdIdentity, "cometbft", subCmd,
 		"--" + cmdId.CfgDataDir, sc.dataDir,
 	}
 	nodeBinary, _ := sc.Flags.GetString(cfgNodeBinary)

@@ -6,41 +6,44 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 )
 
+// labelRuntime is the label for the runtime identifier.
+const labelRuntime = "runtime"
+
 var (
 	pendingCheckSize = prometheus.NewGaugeVec(
 		prometheus.GaugeOpts{
 			Name: "oasis_txpool_pending_check_size",
 			Help: "Size of the pending to be checked queue (number of entries).",
 		},
-		[]string{"runtime"},
+		[]string{labelRuntime},
 	)
 	mainQueueSize = prometheus.NewGaugeVec(
 		prometheus.GaugeOpts{
 			Name: "oasis_txpool_pending_schedule_size",
 			Help: "Size of the main schedulable queue (number of entries).",
 		},
-		[]string{"runtime"},
+		[]string{labelRuntime},
 	)
 	rimQueueSize = prometheus.NewGaugeVec(
 		prometheus.GaugeOpts{
 			Name: "oasis_txpool_rim_queue_size",
 			Help: "Size of the roothash incoming message transactions schedulable queue (number of entries).",
 		},
-		[]string{"runtime"},
+		[]string{labelRuntime},
 	)
 	rejectedTransactions = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
 			Name: "oasis_txpool_rejected_transactions",
 			Help: "Number of rejected transactions (failing check tx).",
 		},
-		[]string{"runtime"},
+		[]string{labelRuntime},
 	)
 	acceptedTransactions = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
 			Name: "oasis_txpool_accepted_transactions",
 			Help: "Number of accepted transactions (passing check tx).",
 		},
-		[]string{"runtime"},
+		[]string{labelRuntime},
 	)
 	txpoolCollectors = []prometheus.Collector{
 		pendingCheckSize,
@@ -55,7 +58,7 @@ var (
 
 func (t *txPool) getMetricLabels() prometheus.Labels {
 	return prometheus.Labels{
-		"runtime": t.runtimeID.String(),
+		labelRuntime: t.runtimeID.String(),
 	}
 }
 
