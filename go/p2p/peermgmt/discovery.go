@@ -159,7 +159,7 @@ func (d *peerDiscovery) run(ctx context.Context) {
 					continue
 				}
 
-				advCtx, advCancel := context.WithCancel(ctx)
+				advCtx, advCancel := context.WithCancel(ctx) //nolint:gosec
 				ongoing[ns] = advCancel
 
 				for _, seed := range d.seeds {

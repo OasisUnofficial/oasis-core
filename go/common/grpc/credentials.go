@@ -57,7 +57,16 @@ func NewClientCreds(opts *ClientOptions) (credentials.TransportCredentials, erro
 				}
 			}
 
-			err = cmnTLS.VerifyCertificate(params.RawCerts, cmnTLS.VerifyOptions{
+			certs := make([]*x509.Certificate, 0, len(params.RawCerts))
+			for _, raw := range params.RawCerts {
+				cert, err := x509.ParseCertificate(raw)
+				if err != nil {
+					return nil, fmt.Errorf("tls: bad X509 certificate: %w", err)
+				}
+				certs = append(certs, cert)
+			}
+
+			err = cmnTLS.VerifyCertificates(certs, cmnTLS.VerifyOptions{
 				CommonName: opts.CommonName,
 				Keys:       keys,
 			})

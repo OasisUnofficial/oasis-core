@@ -4,7 +4,6 @@ package grpc
 import (
 	"context"
 	"crypto/tls"
-	"crypto/x509"
 	"fmt"
 	"net"
 	"os"
@@ -641,8 +640,11 @@ func NewServer(config *ServerConfig) (*Server, error) {
 	if config.Identity != nil && config.Identity.TLSCertificate != nil {
 		tlsConfig := &tls.Config{
 			ClientAuth: clientAuthType,
-			VerifyPeerCertificate: func(rawCerts [][]byte, _ [][]*x509.Certificate) error {
-				return cmnTLS.VerifyCertificate(rawCerts, cmnTLS.VerifyOptions{
+			VerifyConnection: func(cs tls.ConnectionState) error {
+				// Ensure certificate verification runs for every connection,
+				// including resumed TLS sessions, which bypass function
+				// VerifyPeerCertificate.
+				return cmnTLS.VerifyCertificates(cs.PeerCertificates, cmnTLS.VerifyOptions{
 					CommonName:         config.ClientCommonName,
 					AllowUnknownKeys:   true,
 					AllowNoCertificate: true,
