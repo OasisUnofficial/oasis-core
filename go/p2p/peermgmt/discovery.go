@@ -130,23 +130,11 @@ func (d *peerDiscovery) run(ctx context.Context) {
 	var wg sync.WaitGroup
 	defer wg.Wait()
 
-	// Force advertise check at startup.
-	select {
-	case d.advCh <- struct{}{}:
-	default:
-	}
-
 	// Handle advertise start/stop requests.
 	ongoing := make(map[string]context.CancelFunc)
 
 	for {
-		select {
-		case <-d.advCh:
-		case <-ctx.Done():
-			return
-		}
-
-		// Something has changed. Check which namespaces where added or removed.
+		// Force advertise check at startup and when something changes.
 		func() {
 			d.mu.Lock()
 			defer d.mu.Unlock()
@@ -174,12 +162,10 @@ func (d *peerDiscovery) run(ctx context.Context) {
 				advCtx, advCancel := context.WithCancel(ctx)
 				ongoing[ns] = advCancel
 
-				wg.Add(len(d.seeds))
 				for _, seed := range d.seeds {
-					go func(seed discovery.Discovery, ns string) {
-						defer wg.Done()
+					wg.Go(func() {
 						d.advertise(advCtx, seed, ns)
-					}(seed, ns)
+					})
 				}
 
 				d.logger.Info("started advertising",
@@ -187,6 +173,12 @@ func (d *peerDiscovery) run(ctx context.Context) {
 				)
 			}
 		}()
+
+		select {
+		case <-d.advCh:
+		case <-ctx.Done():
+			return
+		}
 	}
 }
 
