@@ -25,6 +25,17 @@ import (
 )
 
 const (
+	// CmdGenesis is the genesis subcommand.
+	CmdGenesis = "genesis"
+	// CmdInit is the init subcommand.
+	CmdInit = "init"
+	// CmdCheck is the check subcommand.
+	CmdCheck = "check"
+	// CmdDump is the dump subcommand.
+	CmdDump = "dump"
+	// CmdMigrate is the migrate subcommand.
+	CmdMigrate = "migrate"
+
 	// CfgNewGenesisFile is the flag used to specify a new genesis file.
 	CfgNewGenesisFile = "genesis.new_file"
 
@@ -33,7 +44,7 @@ const (
 
 var (
 	migrateGenesisCmd = &cobra.Command{
-		Use:   "migrate",
+		Use:   CmdMigrate,
 		Short: "migrate a genesis document from a previous release",
 		Run:   doMigrateGenesis,
 	}

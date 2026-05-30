@@ -10,6 +10,13 @@ import (
 	"github.com/oasisprotocol/oasis-core/go/runtime/bundle/component"
 )
 
+const (
+	// labelRuntime is the label for the runtime identifier.
+	labelRuntime = "runtime"
+	// labelKind is the label for the TEE kind.
+	labelKind = "kind"
+)
+
 var (
 	// Number of TEE attestations performed.
 	teeAttestationsPerformed = prometheus.NewCounterVec(
@@ -17,7 +24,7 @@ var (
 			Name: "oasis_tee_attestations_performed",
 			Help: "Number of TEE attestations performed.",
 		},
-		[]string{"runtime", "kind"},
+		[]string{labelRuntime, labelKind},
 	)
 
 	// Number of successful TEE attestations.
@@ -26,7 +33,7 @@ var (
 			Name: "oasis_tee_attestations_successful",
 			Help: "Number of successful TEE attestations.",
 		},
-		[]string{"runtime", "kind"},
+		[]string{labelRuntime, labelKind},
 	)
 
 	// Number of failed TEE attestations.
@@ -35,7 +42,7 @@ var (
 			Name: "oasis_tee_attestations_failed",
 			Help: "Number of failed TEE attestations.",
 		},
-		[]string{"runtime", "kind"},
+		[]string{labelRuntime, labelKind},
 	)
 
 	teeCollectors = []prometheus.Collector{
@@ -56,11 +63,11 @@ func UpdateAttestationMetrics(runtimeID common.Namespace, kind component.TEEKind
 	runtime := runtimeID.String()
 	kindStr := kind.String()
 
-	teeAttestationsPerformed.With(prometheus.Labels{"runtime": runtime, "kind": kindStr}).Inc()
+	teeAttestationsPerformed.With(prometheus.Labels{labelRuntime: runtime, labelKind: kindStr}).Inc()
 	if err != nil {
-		teeAttestationsFailed.With(prometheus.Labels{"runtime": runtime, "kind": kindStr}).Inc()
+		teeAttestationsFailed.With(prometheus.Labels{labelRuntime: runtime, labelKind: kindStr}).Inc()
 	} else {
-		teeAttestationsSuccessful.With(prometheus.Labels{"runtime": runtime, "kind": kindStr}).Inc()
+		teeAttestationsSuccessful.With(prometheus.Labels{labelRuntime: runtime, labelKind: kindStr}).Inc()
 	}
 }
 

@@ -33,14 +33,10 @@ func (auth *PeerPubkeyAuthenticator) AuthFunc(ctx context.Context, _ any) error 
 	if !ok {
 		return status.Errorf(codes.PermissionDenied, "grpc: unexpected peer authentication credentials")
 	}
-	if nPeerCerts := len(tlsAuth.State.PeerCertificates); nPeerCerts != 1 {
-		return status.Errorf(codes.PermissionDenied, "grpc: unexpected number of peer certificates: %d", nPeerCerts)
-	}
-	peerCertRaw := tlsAuth.State.PeerCertificates[0].Raw
 
 	auth.RLock()
 	defer auth.RUnlock()
-	err := cmnTLS.VerifyCertificate([][]byte{peerCertRaw}, cmnTLS.VerifyOptions{
+	err := cmnTLS.VerifyCertificates(tlsAuth.State.PeerCertificates, cmnTLS.VerifyOptions{
 		CommonName: identity.CommonName,
 		Keys:       auth.whitelist,
 	})

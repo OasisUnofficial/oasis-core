@@ -18,10 +18,10 @@ var (
 
 func newROFLScenario(version string) TestClientScenario {
 	return NewTestClientScenario([]any{
-		InsertKeyValueTx{"my_key", "my_value", "", 0, 0, encryptedWithSecretsTxKind},
-		GetKeyValueTx{"my_key", "my_value", 0, 0, encryptedWithSecretsTxKind},
-		RemoveKeyValueTx{"my_key", "my_value", 0, 0, encryptedWithSecretsTxKind},
-		GetKeyValueTx{"my_key", "", 0, 0, encryptedWithSecretsTxKind},
+		InsertKeyValueTx{testKey, testValue, "", 0, 0, encryptedWithSecretsTxKind},
+		GetKeyValueTx{testKey, testValue, 0, 0, encryptedWithSecretsTxKind},
+		RemoveKeyValueTx{testKey, testValue, 0, 0, encryptedWithSecretsTxKind},
+		GetKeyValueTx{testKey, "", 0, 0, encryptedWithSecretsTxKind},
 		// Check that the ROFL component wrote the HTTP response into storage.
 		GetKeyValueTx{"rofl_version", version, 0, 0, plaintextTxKind},
 		KeyExistsTx{"rofl_http", 0, 0, plaintextTxKind},

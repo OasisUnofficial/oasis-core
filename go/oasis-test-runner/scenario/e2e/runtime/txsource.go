@@ -26,6 +26,7 @@ import (
 	governance "github.com/oasisprotocol/oasis-core/go/governance/api"
 	"github.com/oasisprotocol/oasis-core/go/oasis-node/cmd/common"
 	"github.com/oasisprotocol/oasis-core/go/oasis-node/cmd/common/flags"
+	"github.com/oasisprotocol/oasis-core/go/oasis-node/cmd/common/grpc"
 	"github.com/oasisprotocol/oasis-core/go/oasis-node/cmd/debug/txsource"
 	"github.com/oasisprotocol/oasis-core/go/oasis-node/cmd/debug/txsource/workload"
 	"github.com/oasisprotocol/oasis-core/go/oasis-test-runner/env"
@@ -789,7 +790,7 @@ func (sc *txSourceImpl) startWorkload(childEnv *env.Env, errCh chan error, name 
 
 	args := []string{
 		"debug", "txsource",
-		"--address", "unix:" + node.SocketPath(),
+		"--" + grpc.CfgAddress, "unix:" + node.SocketPath(),
 		"--" + common.CfgDebugAllowTestKeys,
 		"--" + flags.CfgDebugDontBlameOasis,
 		"--" + flags.CfgDebugTestEntity,

@@ -8,27 +8,30 @@ import (
 	"github.com/oasisprotocol/oasis-core/go/oasis-node/cmd/common/metrics"
 )
 
+// labelCall is the label for the call method.
+const labelCall = "call"
+
 var (
 	rhpLatency = prometheus.NewSummaryVec(
 		prometheus.SummaryOpts{
 			Name: "oasis_rhp_latency",
 			Help: "Runtime Host call latency (seconds).",
 		},
-		[]string{"call"},
+		[]string{labelCall},
 	)
 	rhpCallSuccesses = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
 			Name: "oasis_rhp_successes",
 			Help: "Number of successful Runtime Host calls.",
 		},
-		[]string{"call"},
+		[]string{labelCall},
 	)
 	rhpCallFailures = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
 			Name: "oasis_rhp_failures",
 			Help: "Number of failed Runtime Host calls.",
 		},
-		[]string{"call"},
+		[]string{labelCall},
 	)
 	rhpCallTimeouts = prometheus.NewCounter(
 		prometheus.CounterOpts{

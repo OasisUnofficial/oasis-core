@@ -38,21 +38,21 @@ var (
 	runtimeCmd = &cobra.Command{
 		Use:        "runtime",
 		Short:      "runtime registry backend utilities",
-		Deprecated: "use the `oasis` CLI instead.",
+		Deprecated: "use the `oasis` CLI instead.", //nolint:goconst
 	}
 
 	registerCmd = &cobra.Command{
 		Use:        "gen_register",
 		Short:      "generate a register runtime transaction",
 		Run:        doGenRegister,
-		Deprecated: "use the `oasis` CLI instead.",
+		Deprecated: "use the `oasis` CLI instead.", //nolint:goconst
 	}
 
 	listCmd = &cobra.Command{
 		Use:        "list",
 		Short:      "list registered runtimes",
 		Run:        doList,
-		Deprecated: "use the `oasis` CLI instead.",
+		Deprecated: "use the `oasis` CLI instead.", //nolint:goconst
 	}
 
 	logger = logging.GetLogger("cmd/registry/runtime")

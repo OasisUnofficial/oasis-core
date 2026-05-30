@@ -176,10 +176,11 @@ func testQuery(
 	// Query runtime.
 	// Since we are using the mock runtime host the response should be a CBOR-serialized method name
 	// with the added " world" string.
+	const methodHello = "hello"
 	rsp, err := c.Query(ctx, &api.QueryRequest{
 		RuntimeID: runtimeID,
 		Round:     blk.Header.Round,
-		Method:    "hello",
+		Method:    methodHello,
 	})
 	require.NoError(t, err, "Query")
 	var decResp string
@@ -190,7 +191,7 @@ func testQuery(
 	rsp, err = c.Query(ctx, &api.QueryRequest{
 		RuntimeID: runtimeID,
 		Round:     1,
-		Method:    "hello",
+		Method:    methodHello,
 	})
 	require.NoError(t, err, "Query")
 	var decResp2 string
@@ -202,7 +203,7 @@ func testQuery(
 	rsp, err = c.Query(ctx, &api.QueryRequest{
 		RuntimeID: runtimeID,
 		Round:     1,
-		Method:    "hello",
+		Method:    methodHello,
 	})
 	require.NoError(t, err, "Query")
 	var decResp3 string
@@ -215,7 +216,7 @@ func testQuery(
 	rsp, err = c.Query(ctx, &api.QueryRequest{
 		RuntimeID: runtimeID,
 		Round:     api.RoundLatest,
-		Method:    "hello",
+		Method:    methodHello,
 	})
 	require.NoError(t, err, "Query")
 	var decResp4 string

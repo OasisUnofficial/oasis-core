@@ -70,77 +70,77 @@ var (
 	accountCmd = &cobra.Command{
 		Use:        "account",
 		Short:      "account management commands",
-		Deprecated: "use the `oasis` CLI instead.",
+		Deprecated: "use the `oasis` CLI instead.", //nolint:goconst
 	}
 
 	accountInfoCmd = &cobra.Command{
 		Use:        "info",
 		Short:      "get account info",
 		Run:        doAccountInfo,
-		Deprecated: "use the `oasis` CLI instead.",
+		Deprecated: "use the `oasis` CLI instead.", //nolint:goconst
 	}
 
 	accountNonceCmd = &cobra.Command{
 		Use:        "nonce",
 		Short:      "get account nonce",
 		Run:        doAccountNonce,
-		Deprecated: "use the `oasis` CLI instead.",
+		Deprecated: "use the `oasis` CLI instead.", //nolint:goconst
 	}
 
 	accountValidateAddressCmd = &cobra.Command{
 		Use:        "validate_address",
 		Short:      "validate account address",
 		Run:        doValidateAddress,
-		Deprecated: "use the `oasis` CLI instead.",
+		Deprecated: "use the `oasis` CLI instead.", //nolint:goconst
 	}
 
 	accountTransferCmd = &cobra.Command{
 		Use:        "gen_transfer",
 		Short:      "generate a transfer transaction",
 		Run:        doAccountTransfer,
-		Deprecated: "use the `oasis` CLI instead.",
+		Deprecated: "use the `oasis` CLI instead.", //nolint:goconst
 	}
 
 	accountBurnCmd = &cobra.Command{
 		Use:        "gen_burn",
 		Short:      "generate a burn transaction",
 		Run:        doAccountBurn,
-		Deprecated: "use the `oasis` CLI instead.",
+		Deprecated: "use the `oasis` CLI instead.", //nolint:goconst
 	}
 
 	accountEscrowCmd = &cobra.Command{
 		Use:        "gen_escrow",
 		Short:      "generate an escrow (stake) transaction",
 		Run:        doAccountEscrow,
-		Deprecated: "use the `oasis` CLI instead.",
+		Deprecated: "use the `oasis` CLI instead.", //nolint:goconst
 	}
 
 	accountReclaimEscrowCmd = &cobra.Command{
 		Use:        "gen_reclaim_escrow",
 		Short:      "generate a reclaim escrow (unstake) transaction",
 		Run:        doAccountReclaimEscrow,
-		Deprecated: "use the `oasis` CLI instead.",
+		Deprecated: "use the `oasis` CLI instead.", //nolint:goconst
 	}
 
 	accountAmendCommissionScheduleCmd = &cobra.Command{
 		Use:        "gen_amend_commission_schedule",
 		Short:      "generate an amend commission schedule transaction",
 		Run:        doAccountAmendCommissionSchedule,
-		Deprecated: "use the `oasis` CLI instead.",
+		Deprecated: "use the `oasis` CLI instead.", //nolint:goconst
 	}
 
 	accountAllowCmd = &cobra.Command{
 		Use:        "gen_allow",
 		Short:      "generate an allow transaction",
 		Run:        doAccountAllow,
-		Deprecated: "use the `oasis` CLI instead.",
+		Deprecated: "use the `oasis` CLI instead.", //nolint:goconst
 	}
 
 	accountWithdrawCmd = &cobra.Command{
 		Use:        "gen_withdraw",
 		Short:      "generate a withdraw transaction",
 		Run:        doAccountWithdraw,
-		Deprecated: "use the `oasis` CLI instead.",
+		Deprecated: "use the `oasis` CLI instead.", //nolint:goconst
 	}
 )
 

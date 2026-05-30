@@ -3,7 +3,6 @@ package api
 import (
 	"errors"
 	"fmt"
-	"reflect"
 )
 
 type errorUnavailableState struct {
@@ -28,7 +27,7 @@ func UnavailableStateError(err error) error {
 	if err == nil {
 		return nil
 	}
-	if v := reflect.ValueOf(err); v.Kind() == reflect.Ptr && v.IsNil() {
+	if e, ok := err.(*errorUnavailableState); ok && e == nil { // Handle nil interface value.
 		return nil
 	}
 	return &errorUnavailableState{err}

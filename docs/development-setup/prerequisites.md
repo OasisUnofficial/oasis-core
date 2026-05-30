@@ -3,21 +3,21 @@
 The following is a list of prerequisites required to start developing on Oasis
 Core:
 
-* Linux (if you are not on Linux, you will need to either set up a VM with the
+- Linux (if you are not on Linux, you will need to either set up a VM with the
   proper environment or, if Docker is available for your platform, use the
   provided Docker image which does this for you,
   [see below](#using-the-development-docker-image)).
 
-* System packages:
-  * [Bubblewrap] (at least version 0.3.3).
-  * [GCC] (including C++ subpackage).
-  * [Clang] (including development package).
-  * [Protobuf] compiler.
-  * [GNU Make].
-  * [CMake].
-  * [pkg-config].
-  * [OpenSSL] development package.
-  * [libseccomp] development package.
+- System packages:
+  - [Bubblewrap] (at least version 0.3.3).
+  - [GCC] (including C++ subpackage).
+  - [Clang] (including development package).
+  - [Protobuf] compiler.
+  - [GNU Make].
+  - [CMake].
+  - [pkg-config].
+  - [OpenSSL] development package.
+  - [libseccomp] development package.
 
   _NOTE: On Ubuntu/Debian systems, compiling [mbedtls] crate when building the
   `oasis-core-runtime` binary requires having the `gcc-multilib` package
@@ -26,21 +26,25 @@ Core:
   On Fedora 29+, you can install all the above with:
 
   <!-- markdownlint-disable line-length -->
+
   ```
   sudo dnf install bubblewrap gcc gcc-c++ clang-devel clang protobuf-compiler make cmake openssl-devel libseccomp-devel pkg-config
   ```
+
   <!-- markdownlint-enable line-length -->
 
   On Ubuntu 18.10+ (18.04 LTS provides overly-old `bubblewrap`), you can install
   all the above with:
 
   <!-- markdownlint-disable line-length -->
+
   ```
   sudo apt install bubblewrap gcc g++ gcc-multilib libclang-dev clang protobuf-compiler make cmake libssl-dev libseccomp-dev pkg-config
   ```
+
   <!-- markdownlint-enable line-length -->
 
-* [Go] (at least version 1.26.0).
+- [Go] (at least version 1.26.3).
 
   If your distribution provides a new-enough version of Go, just use that.
 
@@ -48,25 +52,26 @@ Core:
   then go >=1.19 is not supported yet; you need to use 1.18.x.
 
   Otherwise:
-  * install the Go version provided by your distribution,
-  * [ensure `$GOPATH/bin` is in your `PATH`](
-    https://tip.golang.org/doc/code.html#GOPATH),
-  * [install the desired version of Go](
-    https://golang.org/doc/install#extra_versions), e.g. 1.26.0, with:
+  - install the Go version provided by your distribution,
+  - ensure `$GOPATH/bin` is in your
+    [`PATH`](https://tip.golang.org/doc/code.html#GOPATH),
+  - install the desired
+    [version of Go](https://golang.org/doc/install#extra_versions),
+    e.g. 1.26.3, with:
 
     ```
-    go install golang.org/dl/go1.26.0@latest
-    go1.26.0 download
+    go install golang.org/dl/go1.26.3@latest
+    go1.26.3 download
     ```
 
-  * instruct the build system to use this particular version of Go by setting
+  - instruct the build system to use this particular version of Go by setting
     the `OASIS_GO` environment variable in your `~/.bashrc`:
 
     ```
-    export OASIS_GO=go1.26.0
+    export OASIS_GO=go1.26.3
     ```
 
-* [Rust].
+- [Rust].
 
   We follow [Rust upstream's recommendation][rust-upstream-rustup] on using
   [rustup] to install and manage Rust versions.
@@ -88,18 +93,20 @@ Core:
   This will run `rustup-init` which will download and install the latest stable
   version of Rust on your system.
 
-* [Fortanix Rust EDP] utilities.
+- [Fortanix Rust EDP] utilities.
 
   Install the Fortanix Rust EDP utilities by running:
 
   <!-- markdownlint-disable line-length -->
+
   ```
   cargo install fortanix-sgx-tools
   cargo install sgxs-tools
   ```
+
   <!-- markdownlint-enable line-length -->
 
-* Oasis Core's Rust toolchain version with Fortanix SGX target.
+- Oasis Core's Rust toolchain version with Fortanix SGX target.
 
   The version of the Rust toolchain we use in Oasis Core is specified in the
   [`rust-toolchain.toml`] file.
@@ -129,7 +136,7 @@ Core:
   rustc 1.77.0-nightly (75c68cfd2 2024-01-07)
   ```
 
-* (**OPTIONAL**) [gofumpt] and [goimports].
+- (**OPTIONAL**) [gofumpt] and [goimports].
 
   Required if you plan to change any of the Go code in order for automated code
   formatting (`make fmt`) to work.
@@ -141,7 +148,7 @@ Core:
   ${OASIS_GO:-go} install golang.org/x/tools/cmd/goimports@v0.36.0
   ```
 
-* (**OPTIONAL**) [golangci-lint].
+- (**OPTIONAL**) [golangci-lint].
 
   Required if you plan to change any of the Go code in order for automated code
   linting (`make lint`) to work.
@@ -151,10 +158,10 @@ Core:
   ```
   curl -sSfL \
   https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh \
-   | sh -s -- -b $(${OASIS_GO:-go} env GOPATH)/bin v2.10.1
+   | sh -s -- -b $(${OASIS_GO:-go} env GOPATH)/bin v2.12.2
   ```
 
-* (**OPTIONAL**) [protoc-gen-go].
+- (**OPTIONAL**) [protoc-gen-go].
 
   Download and install it with:
 
@@ -166,16 +173,18 @@ Core:
   `protoc-gen-go` to `/usr/local/bin` (which is in `$PATH`) with:_
 
   <!-- markdownlint-disable line-length -->
+
   ```
   sudo GOBIN=/usr/local/bin ${OASIS_GO:-go} install google.golang.org/protobuf/cmd/protoc-gen-go@v1.21.0
   ```
+
   <!-- markdownlint-enable line-length -->
 
   _NOTE: The repository has the most up-to-date files generated by protoc-gen-go
-  committed for convenience.  Installing protoc-gen-go is only required if you
+  committed for convenience. Installing protoc-gen-go is only required if you
   are a developer making changes to protobuf definitions used by Go._
 
-* (**OPTIONAL**) [jemalloc] (version 5.2.1, built with `'je_'` jemalloc-prefix)
+- (**OPTIONAL**) [jemalloc] (version 5.2.1, built with `'je_'` jemalloc-prefix)
 
   Alternatively set `OASIS_BADGER_NO_JEMALLOC=1` environment variable when
   building `oasis-node` code, to build [BadgerDB] without `jemalloc` support.
@@ -214,6 +223,7 @@ In the following instructions, the top-level directory is the directory
 where the code has been checked out.
 
 <!-- markdownlint-disable line-length -->
+
 [Bubblewrap]: https://github.com/projectatomic/bubblewrap
 [GCC]: http://gcc.gnu.org/
 [Clang]: https://clang.llvm.org/
@@ -227,13 +237,10 @@ where the code has been checked out.
 [Go]: https://golang.org
 [rustup]: https://rustup.rs/
 [rust-upstream-rustup]: https://www.rust-lang.org/tools/install
-[download `rustup-init` executable for your platform]:
-  https://github.com/rust-lang/rustup#other-installation-methods
+[download `rustup-init` executable for your platform]: https://github.com/rust-lang/rustup#other-installation-methods
 [Rust]: https://www.rust-lang.org/
-[`rust-toolchain.toml`]:
-  https://github.com/oasisprotocol/oasis-core/tree/master/rust-toolchain.toml
-[rust-toolchain-precedence]:
-  https://github.com/rust-lang/rustup/blob/master/README.md#override-precedence
+[`rust-toolchain.toml`]: https://github.com/oasisprotocol/oasis-core/tree/master/rust-toolchain.toml
+[rust-toolchain-precedence]: https://github.com/rust-lang/rustup/blob/master/README.md#override-precedence
 [Fortanix Rust EDP]: https://edp.fortanix.com
 [gofumpt]: https://github.com/mvdan/gofumpt
 [goimports]: https://pkg.go.dev/golang.org/x/tools/cmd/goimports
@@ -241,16 +248,16 @@ where the code has been checked out.
 [protoc-gen-go]: https://github.com/golang/protobuf
 [jemalloc]: https://github.com/jemalloc/jemalloc
 [BadgerDB]: https://github.com/dgraph-io/badger/
-[jemalloc-hardcode-path]:
-  https://github.com/dgraph-io/ristretto/blob/221ca9b2091d12e5d24aa5d7d56e49745fc175d8/z/calloc_jemalloc.go#L9-L13
+[jemalloc-hardcode-path]: https://github.com/dgraph-io/ristretto/blob/221ca9b2091d12e5d24aa5d7d56e49745fc175d8/z/calloc_jemalloc.go#L9-L13
+
 <!-- markdownlint-enable line-length -->
 
 ## Using the Development Docker Image
 
 If for some reason you don't want or can't install the specified prerequisites
-on the host system, you can use our development Docker image. This requires that
-you have a [recent version of Docker installed](
-https://docs.docker.com/install/).
+on the host system, you can use our development Docker image. This requires
+that you have a
+[recent version of Docker installed](https://docs.docker.com/install/).
 
 Oasis development environment with all the dependencies preinstalled is
 available in the `ghcr.io/oasisprotocol/oasis-core-dev:master` image.

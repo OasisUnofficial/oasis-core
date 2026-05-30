@@ -13,6 +13,7 @@ import (
 	"github.com/oasisprotocol/oasis-core/go/config"
 	"github.com/oasisprotocol/oasis-core/go/oasis-node/cmd/common"
 	"github.com/oasisprotocol/oasis-core/go/oasis-node/cmd/common/flags"
+	"github.com/oasisprotocol/oasis-core/go/oasis-node/cmd/keymanager"
 	kmCmd "github.com/oasisprotocol/oasis-core/go/oasis-node/cmd/keymanager"
 	"github.com/oasisprotocol/oasis-core/go/oasis-test-runner/env"
 	registry "github.com/oasisprotocol/oasis-core/go/registry/api"
@@ -55,7 +56,7 @@ func (pol *KeymanagerPolicy) provision() error {
 	// Policy signed with test keys.
 	policyPath := filepath.Join(pol.dir.String(), kmPolicyFile)
 	policyArgs := []string{
-		"keymanager", "init_policy",
+		keymanager.CmdKeymanager, keymanager.CmdInitPolicy,
 		"--" + flags.CfgDebugDontBlameOasis,
 		"--" + kmCmd.CfgPolicyFile, policyPath,
 		"--" + kmCmd.CfgPolicyID, pol.runtime.ID().String(),
@@ -92,7 +93,7 @@ func (pol *KeymanagerPolicy) provision() error {
 
 	// Sign policy with test keys.
 	signArgsTpl := []string{
-		"keymanager", "sign_policy",
+		keymanager.CmdKeymanager, keymanager.CmdSignPolicy,
 		"--" + common.CfgDebugAllowTestKeys,
 		"--" + flags.CfgDebugDontBlameOasis,
 		"--" + kmCmd.CfgPolicyFile, policyPath,
@@ -228,7 +229,7 @@ func (km *Keymanager) provisionGenesis() error {
 	// Provision status. We can only provision this here as we need
 	// a list of runtimes allowed to query the key manager.
 	statusArgs := []string{
-		"keymanager", "init_status",
+		keymanager.CmdKeymanager, keymanager.CmdInitStatus,
 		"--" + common.CfgDebugAllowTestKeys,
 		"--" + flags.CfgDebugDontBlameOasis,
 		"--" + kmCmd.CfgStatusID, km.runtime.ID().String(),

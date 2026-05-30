@@ -4,43 +4,50 @@ import (
 	"fmt"
 )
 
+const (
+	testKey    = "my_key"
+	testKey2   = "my_key2"
+	testValue  = "my_value"
+	testValue2 = "my_value"
+)
+
 var (
 	InsertScenario = NewTestClientScenario([]any{
-		InsertKeyValueTx{"my_key", "my_value", "", 0, 0, plaintextTxKind},
-		GetKeyValueTx{"my_key", "my_value", 0, 0, plaintextTxKind},
+		InsertKeyValueTx{testKey, testValue, "", 0, 0, plaintextTxKind},
+		GetKeyValueTx{testKey, testValue, 0, 0, plaintextTxKind},
 	})
 
 	InsertEncWithSecretsScenario = NewTestClientScenario([]any{
-		InsertKeyValueTx{"my_key", "my_value", "", 0, 0, encryptedWithSecretsTxKind},
-		GetKeyValueTx{"my_key", "my_value", 0, 0, encryptedWithSecretsTxKind},
+		InsertKeyValueTx{testKey, testValue, "", 0, 0, encryptedWithSecretsTxKind},
+		GetKeyValueTx{testKey, testValue, 0, 0, encryptedWithSecretsTxKind},
 	})
 
 	RemoveScenario = NewTestClientScenario([]any{
-		GetKeyValueTx{"my_key", "my_value", 0, 0, plaintextTxKind},
+		GetKeyValueTx{testKey, testValue, 0, 0, plaintextTxKind},
 	})
 
 	RemoveEncWithSecretsScenario = NewTestClientScenario([]any{
-		GetKeyValueTx{"my_key", "my_value", 0, 0, encryptedWithSecretsTxKind},
+		GetKeyValueTx{testKey, testValue, 0, 0, encryptedWithSecretsTxKind},
 	})
 
 	InsertTransferScenario = NewTestClientScenario([]any{
-		InsertKeyValueTx{"my_key", "my_value", "", 0, 0, plaintextTxKind},
-		GetKeyValueTx{"my_key", "my_value", 0, 0, plaintextTxKind},
+		InsertKeyValueTx{testKey, testValue, "", 0, 0, plaintextTxKind},
+		GetKeyValueTx{testKey, testValue, 0, 0, plaintextTxKind},
 		ConsensusTransferTx{},
 	})
 
 	InsertRemoveEncWithSecretsScenario = NewTestClientScenario([]any{
-		InsertKeyValueTx{"my_key", "my_value", "", 0, 0, encryptedWithSecretsTxKind},
-		GetKeyValueTx{"my_key", "my_value", 0, 0, encryptedWithSecretsTxKind},
-		RemoveKeyValueTx{"my_key", "my_value", 0, 0, encryptedWithSecretsTxKind},
-		GetKeyValueTx{"my_key", "", 0, 0, encryptedWithSecretsTxKind},
+		InsertKeyValueTx{testKey, testValue, "", 0, 0, encryptedWithSecretsTxKind},
+		GetKeyValueTx{testKey, testValue, 0, 0, encryptedWithSecretsTxKind},
+		RemoveKeyValueTx{testKey, testValue, 0, 0, encryptedWithSecretsTxKind},
+		GetKeyValueTx{testKey, "", 0, 0, encryptedWithSecretsTxKind},
 	})
 
 	InsertRemoveEncWithSecretsScenarioV2 = NewTestClientScenario([]any{
-		InsertKeyValueTx{"my_key2", "my_value2", "", 0, 0, encryptedWithSecretsTxKind},
-		GetKeyValueTx{"my_key2", "my_value2", 0, 0, encryptedWithSecretsTxKind},
-		RemoveKeyValueTx{"my_key2", "my_value2", 0, 0, encryptedWithSecretsTxKind},
-		GetKeyValueTx{"my_key2", "", 0, 0, encryptedWithSecretsTxKind},
+		InsertKeyValueTx{testKey2, testValue2, "", 0, 0, encryptedWithSecretsTxKind},
+		GetKeyValueTx{testKey2, testValue2, 0, 0, encryptedWithSecretsTxKind},
+		RemoveKeyValueTx{testKey2, testValue2, 0, 0, encryptedWithSecretsTxKind},
+		GetKeyValueTx{testKey2, "", 0, 0, encryptedWithSecretsTxKind},
 	})
 
 	SimpleScenario               = newSimpleKeyValueScenario(false, plaintextTxKind)

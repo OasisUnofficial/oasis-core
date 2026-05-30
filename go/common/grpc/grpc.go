@@ -4,7 +4,6 @@ package grpc
 import (
 	"context"
 	"crypto/tls"
-	"crypto/x509"
 	"fmt"
 	"net"
 	"os"
@@ -37,6 +36,9 @@ const (
 	maxSendMsgSize = 104857600 // 100 MiB
 
 	gracefulStopWaitPeriod = 5 * time.Second
+
+	// labelCall is the label for the call method.
+	labelCall = "call"
 )
 
 var (
@@ -51,42 +53,42 @@ var (
 			Name: "oasis_grpc_server_calls",
 			Help: "Number of gRPC calls.",
 		},
-		[]string{"call"},
+		[]string{labelCall},
 	)
 	grpcServerLatency = prometheus.NewSummaryVec(
 		prometheus.SummaryOpts{
 			Name: "oasis_grpc_server_latency",
 			Help: "gRPC call latency (seconds).",
 		},
-		[]string{"call"},
+		[]string{labelCall},
 	)
 	grpcServerStreamWrites = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
 			Name: "oasis_grpc_server_stream_writes",
 			Help: "Number of gRPC stream writes.",
 		},
-		[]string{"call"},
+		[]string{labelCall},
 	)
 	grpcClientCalls = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
 			Name: "oasis_grpc_client_calls",
 			Help: "Number of gRPC calls.",
 		},
-		[]string{"call"},
+		[]string{labelCall},
 	)
 	grpcClientLatency = prometheus.NewSummaryVec(
 		prometheus.SummaryOpts{
 			Name: "oasis_grpc_client_latency",
 			Help: "gRPC call latency (seconds).",
 		},
-		[]string{"call"},
+		[]string{labelCall},
 	)
 	grpcClientStreamWrites = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
 			Name: "oasis_grpc_client_stream_writes",
 			Help: "Number of gRPC stream writes.",
 		},
-		[]string{"call"},
+		[]string{labelCall},
 	)
 
 	grpcCollectors = []prometheus.Collector{
@@ -185,11 +187,11 @@ func (l *grpcLogAdapter) unaryLogger(ctx context.Context, req any, info *grpc.Un
 		)
 	}
 
-	grpcServerCalls.With(prometheus.Labels{"call": info.FullMethod}).Inc()
+	grpcServerCalls.With(prometheus.Labels{labelCall: info.FullMethod}).Inc()
 
 	start := time.Now()
 	rsp, err := handler(ctx, req)
-	grpcServerLatency.With(prometheus.Labels{"call": info.FullMethod}).Observe(time.Since(start).Seconds())
+	grpcServerLatency.With(prometheus.Labels{labelCall: info.FullMethod}).Observe(time.Since(start).Seconds())
 	if err != nil {
 		l.reqLogger.Error("request failed",
 			"method", info.FullMethod,
@@ -226,11 +228,11 @@ func (l *grpcLogAdapter) unaryClientLogger(ctx context.Context,
 		)
 	}
 
-	grpcClientCalls.With(prometheus.Labels{"call": method}).Inc()
+	grpcClientCalls.With(prometheus.Labels{labelCall: method}).Inc()
 
 	start := time.Now()
 	err := invoker(ctx, method, req, rsp, cc, opts...)
-	grpcClientLatency.With(prometheus.Labels{"call": method}).Observe(time.Since(start).Seconds())
+	grpcClientLatency.With(prometheus.Labels{labelCall: method}).Observe(time.Since(start).Seconds())
 	switch err {
 	case nil:
 		if l.isDebug {
@@ -259,7 +261,7 @@ func (l *grpcLogAdapter) streamClientLogger(ctx context.Context,
 	streamer grpc.Streamer,
 	opts ...grpc.CallOption,
 ) (grpc.ClientStream, error) {
-	grpcClientCalls.With(prometheus.Labels{"call": method}).Inc()
+	grpcClientCalls.With(prometheus.Labels{labelCall: method}).Inc()
 
 	seq := atomic.AddUint64(&l.streamSeq, 1)
 	cs, err := streamer(ctx, desc, cc, method, opts...)
@@ -297,7 +299,7 @@ func (l *grpcLogAdapter) streamLogger(srv any, ss grpc.ServerStream, info *grpc.
 		seq:          seq,
 	}
 
-	grpcServerCalls.With(prometheus.Labels{"call": info.FullMethod}).Inc()
+	grpcServerCalls.With(prometheus.Labels{labelCall: info.FullMethod}).Inc()
 
 	err := handler(srv, stream)
 
@@ -347,7 +349,7 @@ type grpcClientStreamLogger struct {
 }
 
 func (s *grpcClientStreamLogger) SendMsg(m any) error {
-	grpcClientStreamWrites.With(prometheus.Labels{"call": s.method}).Inc()
+	grpcClientStreamWrites.With(prometheus.Labels{labelCall: s.method}).Inc()
 	err := s.ClientStream.SendMsg(m)
 
 	if s.logAdapter.isDebug {
@@ -381,7 +383,7 @@ type grpcStreamLogger struct {
 }
 
 func (s *grpcStreamLogger) SendMsg(m any) error {
-	grpcServerStreamWrites.With(prometheus.Labels{"call": s.method}).Inc()
+	grpcServerStreamWrites.With(prometheus.Labels{labelCall: s.method}).Inc()
 	err := s.ServerStream.SendMsg(m)
 
 	if s.logAdapter.isDebug {
@@ -641,8 +643,11 @@ func NewServer(config *ServerConfig) (*Server, error) {
 	if config.Identity != nil && config.Identity.TLSCertificate != nil {
 		tlsConfig := &tls.Config{
 			ClientAuth: clientAuthType,
-			VerifyPeerCertificate: func(rawCerts [][]byte, _ [][]*x509.Certificate) error {
-				return cmnTLS.VerifyCertificate(rawCerts, cmnTLS.VerifyOptions{
+			VerifyConnection: func(cs tls.ConnectionState) error {
+				// Ensure certificate verification runs for every connection,
+				// including resumed TLS sessions, which bypass function
+				// VerifyPeerCertificate.
+				return cmnTLS.VerifyCertificates(cs.PeerCertificates, cmnTLS.VerifyOptions{
 					CommonName:         config.ClientCommonName,
 					AllowUnknownKeys:   true,
 					AllowNoCertificate: true,

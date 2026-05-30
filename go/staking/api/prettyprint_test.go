@@ -33,8 +33,8 @@ func TestPrettyPrintCommissionRatePercentage(t *testing.T) {
 		{"30.03%", quantity.NewFromUint64(30_030)},
 		{"12.345%", quantity.NewFromUint64(12_345)},
 		// Checks for invalid commission rate numerators.
-		{"(invalid)", quantity.NewFromUint64(100_001)},
-		{"(invalid)", quantity.NewFromUint64(123_456)},
+		{prettyprint.QuantityInvalidText, quantity.NewFromUint64(100_001)},
+		{prettyprint.QuantityInvalidText, quantity.NewFromUint64(123_456)},
 	} {
 		rate := PrettyPrintCommissionRatePercentage(*t.rateNumerator)
 		require.Equal(t.expectedRate, rate, "obtained pretty print didn't match expected value")

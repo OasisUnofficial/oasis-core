@@ -47,42 +47,42 @@ var (
 	governanceCmd = &cobra.Command{
 		Use:        "governance",
 		Short:      "governance backend utilities",
-		Deprecated: "use the `oasis` CLI instead.",
+		Deprecated: "use the `oasis` CLI instead.", //nolint:goconst
 	}
 
 	submitProposalCmd = &cobra.Command{
 		Use:        "gen_submit_proposal",
 		Short:      "generate a submit proposal transaction",
 		Run:        doGenSubmitProposal,
-		Deprecated: "use the `oasis` CLI instead.",
+		Deprecated: "use the `oasis` CLI instead.", //nolint:goconst
 	}
 
 	castVoteCmd = &cobra.Command{
 		Use:        "gen_cast_vote",
 		Short:      "generate a cast vote transaction",
 		Run:        doGenCastVote,
-		Deprecated: "use the `oasis` CLI instead.",
+		Deprecated: "use the `oasis` CLI instead.", //nolint:goconst
 	}
 
 	proposalInfoCmd = &cobra.Command{
 		Use:        "proposal_info",
 		Short:      "displays proposal info",
 		Run:        doProposalInfo,
-		Deprecated: "use the `oasis` CLI instead.",
+		Deprecated: "use the `oasis` CLI instead.", //nolint:goconst
 	}
 
 	proposalVotesCmd = &cobra.Command{
 		Use:        "proposal_votes",
 		Short:      "displays votes for a proposal",
 		Run:        doProposalVotes,
-		Deprecated: "use the `oasis` CLI instead.",
+		Deprecated: "use the `oasis` CLI instead.", //nolint:goconst
 	}
 
 	listProposalsCmd = &cobra.Command{
 		Use:        "list_proposals",
 		Short:      "lists active proposals",
 		Run:        doListProposals,
-		Deprecated: "use the `oasis` CLI instead.",
+		Deprecated: "use the `oasis` CLI instead.", //nolint:goconst
 	}
 
 	logger = logging.GetLogger("cmd/governance")

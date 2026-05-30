@@ -20,6 +20,8 @@ import (
 	"github.com/oasisprotocol/oasis-core/go/common/version"
 	consensus "github.com/oasisprotocol/oasis-core/go/consensus/api"
 	"github.com/oasisprotocol/oasis-core/go/keymanager/churp"
+	"github.com/oasisprotocol/oasis-core/go/oasis-node/cmd/common/grpc"
+	"github.com/oasisprotocol/oasis-core/go/oasis-node/cmd/control"
 	"github.com/oasisprotocol/oasis-core/go/oasis-test-runner/env"
 	"github.com/oasisprotocol/oasis-core/go/oasis-test-runner/log"
 	"github.com/oasisprotocol/oasis-core/go/oasis-test-runner/oasis"
@@ -442,9 +444,9 @@ func (sc *nodeUpgradeImpl) Run(ctx context.Context, childEnv *env.Env) error { /
 
 	sc.validator = sc.Net.Validators()[1] // the network controller is on the first one
 	submitArgs := []string{
-		"control", "upgrade-binary",
-		"--wait",
-		"--address", "unix:" + sc.validator.SocketPath(),
+		control.CmdControl, control.CmdUpgradeBinary,
+		"--" + grpc.CfgWait,
+		"--" + grpc.CfgAddress, "unix:" + sc.validator.SocketPath(),
 	}
 
 	// Wait for the node to be ready since we didn't wait for any clients.

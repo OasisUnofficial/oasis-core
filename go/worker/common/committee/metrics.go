@@ -10,7 +10,12 @@ import (
 	roothash "github.com/oasisprotocol/oasis-core/go/roothash/api"
 )
 
-const periodicMetricsInterval = time.Minute
+const (
+	periodicMetricsInterval = time.Minute
+
+	// labelRuntime is the label for the runtime identifier.
+	labelRuntime = "runtime"
+)
 
 var (
 	processedBlockCount = prometheus.NewCounterVec(
@@ -18,70 +23,70 @@ var (
 			Name: "oasis_worker_processed_block_count",
 			Help: "Number of processed roothash blocks.",
 		},
-		[]string{"runtime"},
+		[]string{labelRuntime},
 	)
 	failedRoundCount = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
 			Name: "oasis_worker_failed_round_count",
 			Help: "Number of failed roothash rounds.",
 		},
-		[]string{"runtime"},
+		[]string{labelRuntime},
 	)
 	committeeTransitionCount = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
 			Name: "oasis_worker_committee_transition_count",
 			Help: "Number of committee transitions.",
 		},
-		[]string{"runtime"},
+		[]string{labelRuntime},
 	)
 	epochNumber = prometheus.NewGaugeVec(
 		prometheus.GaugeOpts{
 			Name: "oasis_worker_epoch_number",
 			Help: "Current epoch number as seen by the worker.",
 		},
-		[]string{"runtime"},
+		[]string{labelRuntime},
 	)
 	workerIsExecutorWorker = prometheus.NewGaugeVec(
 		prometheus.GaugeOpts{
 			Name: "oasis_worker_executor_is_worker",
 			Help: "1 if worker is currently an executor worker, 0 otherwise.",
 		},
-		[]string{"runtime"},
+		[]string{labelRuntime},
 	)
 	workerIsExecutorBackup = prometheus.NewGaugeVec(
 		prometheus.GaugeOpts{
 			Name: "oasis_worker_executor_is_backup_worker",
 			Help: "1 if worker is currently an executor backup worker, 0 otherwise.",
 		},
-		[]string{"runtime"},
+		[]string{labelRuntime},
 	)
 	executorCommitteeP2PPeers = prometheus.NewGaugeVec(
 		prometheus.GaugeOpts{
 			Name: "oasis_worker_executor_committee_p2p_peers",
 			Help: "Number of executor committee P2P peers.",
 		},
-		[]string{"runtime"},
+		[]string{labelRuntime},
 	)
 	livenessTotalRounds = prometheus.NewGaugeVec(
 		prometheus.GaugeOpts{
 			Name: "oasis_worker_executor_liveness_total_rounds",
 			Help: "Number of total rounds in last epoch.",
 		},
-		[]string{"runtime"},
+		[]string{labelRuntime},
 	)
 	livenessLiveRounds = prometheus.NewGaugeVec(
 		prometheus.GaugeOpts{
 			Name: "oasis_worker_executor_liveness_live_rounds",
 			Help: "Number of live rounds in last epoch.",
 		},
-		[]string{"runtime"},
+		[]string{labelRuntime},
 	)
 	livenessRatio = prometheus.NewGaugeVec(
 		prometheus.GaugeOpts{
 			Name: "oasis_worker_executor_liveness_live_ratio",
 			Help: "Ratio between live and total rounds. Reports 1 if node is not in committee.",
 		},
-		[]string{"runtime"},
+		[]string{labelRuntime},
 	)
 
 	nodeCollectors = []prometheus.Collector{
@@ -172,6 +177,6 @@ func (n *Node) updatePeriodicMetrics() {
 
 func (n *Node) getMetricLabels() prometheus.Labels {
 	return prometheus.Labels{
-		"runtime": n.Runtime.ID().String(),
+		labelRuntime: n.Runtime.ID().String(),
 	}
 }

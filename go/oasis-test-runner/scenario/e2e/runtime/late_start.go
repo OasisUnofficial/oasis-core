@@ -80,7 +80,7 @@ func (sc *lateStartImpl) Run(ctx context.Context, childEnv *env.Env) error {
 	err = ctrl.RuntimeClient.SubmitTxNoWait(ctx, &api.SubmitTxRequest{
 		RuntimeID: KeyValueRuntimeID,
 		Data: cbor.Marshal(&TxnCall{
-			Method: "insert",
+			Method: methodInsert,
 			Args: struct {
 				Key   string `json:"key"`
 				Value string `json:"value"`
@@ -96,7 +96,7 @@ func (sc *lateStartImpl) Run(ctx context.Context, childEnv *env.Env) error {
 	_, err = ctrl.RuntimeClient.SubmitTx(ctx, &api.SubmitTxRequest{
 		RuntimeID: KeyValueRuntimeID,
 		Data: cbor.Marshal(&TxnCall{
-			Method: "insert",
+			Method: methodInsert,
 			Args: struct {
 				Key   string `json:"key"`
 				Value string `json:"value"`

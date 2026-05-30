@@ -9,7 +9,7 @@ import (
 	"github.com/oasisprotocol/oasis-core/go/oasis-test-runner/oasis"
 	"github.com/oasisprotocol/oasis-core/go/oasis-test-runner/scenario"
 	"github.com/oasisprotocol/oasis-core/go/runtime/client/api"
-	"github.com/oasisprotocol/oasis-core/go/runtime/history"
+	"github.com/oasisprotocol/oasis-core/go/runtime/config"
 )
 
 // RuntimePrune is the runtime prune scenario.
@@ -51,7 +51,7 @@ func (sc *runtimePruneImpl) Fixture() (*oasis.NetworkFixture, error) {
 	f.Network.SetMockEpoch()
 	// Configure pruning.
 	f.Runtimes[1].Pruner = oasis.RuntimePrunerCfg{
-		Strategy: history.PrunerStrategyKeepLast,
+		Strategy: config.PrunerStrategyKeepLast,
 		Interval: pruneInterval,
 		NumKept:  pruneNumKept,
 	}

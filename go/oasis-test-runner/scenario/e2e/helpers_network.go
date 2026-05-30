@@ -7,8 +7,11 @@ import (
 	"os"
 	"path/filepath"
 
-	genesis "github.com/oasisprotocol/oasis-core/go/genesis/api"
+	"github.com/oasisprotocol/oasis-core/go/genesis/api"
 	genesisFile "github.com/oasisprotocol/oasis-core/go/genesis/file"
+	"github.com/oasisprotocol/oasis-core/go/oasis-node/cmd/common/flags"
+	"github.com/oasisprotocol/oasis-core/go/oasis-node/cmd/common/grpc"
+	"github.com/oasisprotocol/oasis-core/go/oasis-node/cmd/genesis"
 	"github.com/oasisprotocol/oasis-core/go/oasis-test-runner/env"
 	"github.com/oasisprotocol/oasis-core/go/oasis-test-runner/oasis"
 	"github.com/oasisprotocol/oasis-core/go/oasis-test-runner/oasis/cli"
@@ -111,7 +114,7 @@ func (sc *Scenario) DumpRestoreNetwork(
 	childEnv *env.Env,
 	fixture *oasis.NetworkFixture,
 	doDbDump bool,
-	genesisMapFn func(*genesis.Document),
+	genesisMapFn func(*api.Document),
 	resetFlags map[uint8]bool,
 ) error {
 	// Stop any compute workers before taking a dump. Otherwise runtime state may progress after
@@ -130,10 +133,10 @@ func (sc *Scenario) DumpRestoreNetwork(
 
 	dumpPath := filepath.Join(childEnv.Dir(), "genesis_dump.json")
 	args := []string{
-		"genesis", "dump",
+		genesis.CmdGenesis, genesis.CmdDump,
 		"--height", "0",
-		"--genesis.file", dumpPath,
-		"--address", "unix:" + sc.Net.Validators()[0].SocketPath(),
+		"--" + flags.CfgGenesisFile, dumpPath,
+		"--" + grpc.CfgAddress, "unix:" + sc.Net.Validators()[0].SocketPath(),
 	}
 
 	if err := cli.RunSubCommand(childEnv, sc.Logger, "genesis-dump", sc.Net.Config().NodeBinary, args); err != nil {
@@ -154,7 +157,7 @@ func (sc *Scenario) DumpRestoreNetwork(
 		// Dump storage.
 		args = []string{
 			"debug", "storage", "export",
-			"--genesis.file", dumpPath,
+			"--" + flags.CfgGenesisFile, dumpPath,
 			"--config", sc.Net.ComputeWorkers()[0].ConfigFile(),
 			"--storage.export.dir", filepath.Join(childEnv.Dir(), "storage_dumps"),
 			"--debug.dont_blame_oasis",

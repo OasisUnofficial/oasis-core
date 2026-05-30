@@ -11,34 +11,37 @@ import (
 	"github.com/oasisprotocol/oasis-core/go/storage/mkvs/checkpoint"
 )
 
+// labelCall is the label for the call method.
+const labelCall = "call"
+
 var (
 	storageFailures = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
 			Name: "oasis_storage_failures",
 			Help: "Number of storage failures.",
 		},
-		[]string{"call"},
+		[]string{labelCall},
 	)
 	storageCalls = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
 			Name: "oasis_storage_successes",
 			Help: "Number of storage successes.",
 		},
-		[]string{"call"},
+		[]string{labelCall},
 	)
 	storageLatency = prometheus.NewSummaryVec(
 		prometheus.SummaryOpts{
 			Name: "oasis_storage_latency",
 			Help: "Storage call latency (seconds).",
 		},
-		[]string{"call"},
+		[]string{labelCall},
 	)
 	storageValueSize = prometheus.NewSummaryVec(
 		prometheus.SummaryOpts{
 			Name: "oasis_storage_value_size",
 			Help: "Storage call value size (bytes).",
 		},
-		[]string{"call"},
+		[]string{labelCall},
 	)
 
 	storageCollectors = []prometheus.Collector{
@@ -48,11 +51,11 @@ var (
 		storageValueSize,
 	}
 
-	labelApply           = prometheus.Labels{"call": "apply"}
-	labelSyncGet         = prometheus.Labels{"call": "sync_get"}
-	labelSyncGetPrefixes = prometheus.Labels{"call": "sync_get_prefixes"}
-	labelSyncIterate     = prometheus.Labels{"call": "sync_iterate"}
-	labelGetDiff         = prometheus.Labels{"call": "get_diff"}
+	labelApply           = prometheus.Labels{labelCall: "apply"}
+	labelSyncGet         = prometheus.Labels{labelCall: "sync_get"}
+	labelSyncGetPrefixes = prometheus.Labels{labelCall: "sync_get_prefixes"}
+	labelSyncIterate     = prometheus.Labels{labelCall: "sync_iterate"}
+	labelGetDiff         = prometheus.Labels{labelCall: "get_diff"}
 
 	metricsOnce sync.Once
 )

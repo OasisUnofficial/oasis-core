@@ -13,6 +13,18 @@ import (
 	staking "github.com/oasisprotocol/oasis-core/go/staking/api"
 )
 
+const (
+	methodInsert      = "insert"
+	methodEncInsert   = "enc_insert"
+	methodChurpInsert = "churp_insert"
+	methodGet         = "get"
+	methodEncGet      = "enc_get"
+	methodChurpGet    = "churp_get"
+	methodRemove      = "remove"
+	methodEncRemove   = "enc_remove"
+	methodChurpRemove = "churp_remove"
+)
+
 // GetCall represents a call to get a key-value pair.
 type GetCall struct {
 	Key        string `json:"key"`
@@ -486,11 +498,11 @@ func (sc *Scenario) submitKeyValueRuntimeInsertTx(
 	var method string
 	switch kind {
 	case plaintextTxKind:
-		method = "insert"
+		method = methodInsert
 	case encryptedWithSecretsTxKind:
-		method = "enc_insert"
+		method = methodEncInsert
 	case encryptedWithChurpTxKind:
-		method = "churp_insert"
+		method = methodChurpInsert
 	}
 
 	args := InsertCall{
@@ -523,11 +535,11 @@ func (sc *Scenario) submitKeyValueRuntimeGetTx(
 	var method string
 	switch kind {
 	case plaintextTxKind:
-		method = "get"
+		method = methodGet
 	case encryptedWithSecretsTxKind:
-		method = "enc_get"
+		method = methodEncGet
 	case encryptedWithChurpTxKind:
-		method = "churp_get"
+		method = methodChurpGet
 	}
 
 	args := GetCall{
@@ -559,11 +571,11 @@ func (sc *Scenario) submitKeyValueRuntimeRemoveTx(
 	var method string
 	switch kind {
 	case plaintextTxKind:
-		method = "remove"
+		method = methodRemove
 	case encryptedWithSecretsTxKind:
-		method = "enc_remove"
+		method = methodEncRemove
 	case encryptedWithChurpTxKind:
-		method = "churp_remove"
+		method = methodChurpRemove
 	}
 
 	args := RemoveCall{
@@ -612,11 +624,11 @@ func (sc *Scenario) submitKeyValueRuntimeInsertMsg(
 	var method string
 	switch kind {
 	case plaintextTxKind:
-		method = "insert"
+		method = methodInsert
 	case encryptedWithSecretsTxKind:
-		method = "enc_insert"
+		method = methodEncInsert
 	case encryptedWithChurpTxKind:
-		method = "churp_insert"
+		method = methodChurpInsert
 	}
 
 	args := InsertCall{
