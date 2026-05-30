@@ -53,8 +53,11 @@ Core:
 
   Otherwise:
   - install the Go version provided by your distribution,
-  - [ensure `$GOPATH/bin` is in your `PATH`](https://tip.golang.org/doc/code.html#GOPATH),
-  - [install the desired version of Go](https://golang.org/doc/install#extra_versions), e.g. 1.26.3, with:
+  - ensure `$GOPATH/bin` is in your
+    [`PATH`](https://tip.golang.org/doc/code.html#GOPATH),
+  - install the desired
+    [version of Go](https://golang.org/doc/install#extra_versions),
+    e.g. 1.26.3, with:
 
     ```
     go install golang.org/dl/go1.26.3@latest
@@ -252,8 +255,9 @@ where the code has been checked out.
 ## Using the Development Docker Image
 
 If for some reason you don't want or can't install the specified prerequisites
-on the host system, you can use our development Docker image. This requires that
-you have a [recent version of Docker installed](https://docs.docker.com/install/).
+on the host system, you can use our development Docker image. This requires
+that you have a
+[recent version of Docker installed](https://docs.docker.com/install/).
 
 Oasis development environment with all the dependencies preinstalled is
 available in the `ghcr.io/oasisprotocol/oasis-core-dev:master` image.
