@@ -19,7 +19,6 @@ import (
 	"github.com/oasisprotocol/oasis-core/go/common/sgx/aesm"
 	"github.com/oasisprotocol/oasis-core/go/common/sgx/pcs"
 	"github.com/oasisprotocol/oasis-core/go/common/sgx/sigstruct"
-	consensus "github.com/oasisprotocol/oasis-core/go/consensus/api"
 	cmdFlags "github.com/oasisprotocol/oasis-core/go/oasis-node/cmd/common/flags"
 	"github.com/oasisprotocol/oasis-core/go/runtime/bundle"
 	"github.com/oasisprotocol/oasis-core/go/runtime/host"
@@ -59,8 +58,8 @@ type Config struct {
 
 	// PCS is the Intel Provisioning Certification Service quote service.
 	PCS pcs.QuoteService
-	// Consensus is the consensus layer backend.
-	Consensus consensus.Service
+	// QuotePolicy provides the quote policy for RONL deployments.
+	QuotePolicy sgxCommon.QuotePolicyProvider
 	// Identity is the node identity.
 	Identity *identity.Identity
 
@@ -86,12 +85,12 @@ type sgxProvisioner struct {
 
 	cfg Config
 
-	sandbox   host.Provisioner
-	pcs       pcs.QuoteService
-	aesm      *aesm.Client
-	consensus consensus.Service
-	identity  *identity.Identity
-	store     *persistent.CommonStore
+	sandbox        host.Provisioner
+	pcs            pcs.QuoteService
+	aesm           *aesm.Client
+	policyProvider sgxCommon.QuotePolicyProvider
+	identity       *identity.Identity
+	store          *persistent.CommonStore
 
 	logger *logging.Logger
 }
@@ -106,13 +105,13 @@ func NewProvisioner(cfg Config) (host.Provisioner, error) {
 	sgxCommon.InitMetrics()
 
 	p := &sgxProvisioner{
-		cfg:       cfg,
-		pcs:       cfg.PCS,
-		aesm:      aesm.NewClient(aesmdSocketPath),
-		consensus: cfg.Consensus,
-		identity:  cfg.Identity,
-		store:     cfg.CommonStore,
-		logger:    logging.GetLogger("runtime/host/sgx"),
+		cfg:            cfg,
+		pcs:            cfg.PCS,
+		aesm:           aesm.NewClient(aesmdSocketPath),
+		policyProvider: cfg.QuotePolicy,
+		identity:       cfg.Identity,
+		store:          cfg.CommonStore,
+		logger:         logging.GetLogger("runtime/host/sgx"),
 	}
 	sp, err := sandbox.NewProvisioner(sandbox.Config{
 		GetSandboxConfig:  p.getSandboxConfig,

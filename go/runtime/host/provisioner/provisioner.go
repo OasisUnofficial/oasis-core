@@ -20,6 +20,7 @@ import (
 	hostProtocol "github.com/oasisprotocol/oasis-core/go/runtime/host/protocol"
 	hostSandbox "github.com/oasisprotocol/oasis-core/go/runtime/host/sandbox"
 	hostSgx "github.com/oasisprotocol/oasis-core/go/runtime/host/sgx"
+	sgxCommon "github.com/oasisprotocol/oasis-core/go/runtime/host/sgx/common"
 	hostTdx "github.com/oasisprotocol/oasis-core/go/runtime/host/tdx"
 )
 
@@ -47,8 +48,10 @@ func New(
 		return nil, err
 	}
 
+	policyProvider := sgxCommon.NewQuotePolicyProvider(consensus)
+
 	// Create runtime provisioner.
-	return createProvisioner(dataDir, commonStore, identity, consensus, hostInfo, qs)
+	return createProvisioner(dataDir, commonStore, identity, hostInfo, qs, policyProvider)
 }
 
 func createHostInfo(genesisDoc *genesisAPI.Document) (*hostProtocol.HostInfo, error) {
@@ -76,9 +79,9 @@ func createProvisioner(
 	dataDir string,
 	commonStore *persistent.CommonStore,
 	identity *identity.Identity,
-	consensus consensus.Service,
 	hostInfo *hostProtocol.HostInfo,
 	qs pcs.QuoteService,
+	policyProvider sgxCommon.QuotePolicyProvider,
 ) (runtimeHost.Provisioner, error) {
 	var err error
 	var insecureNoSandbox bool
@@ -144,7 +147,7 @@ func createProvisioner(
 			CommonStore:           commonStore,
 			LoaderPath:            sgxLoader,
 			PCS:                   qs,
-			Consensus:             consensus,
+			QuotePolicy:           policyProvider,
 			Identity:              identity,
 			SandboxBinaryPath:     sandboxBinary,
 			InsecureNoSandbox:     insecureNoSandbox,
@@ -173,7 +176,7 @@ func createProvisioner(
 		HostInfo:              hostInfo,
 		CommonStore:           commonStore,
 		PCS:                   qs,
-		Consensus:             consensus,
+		QuotePolicy:           policyProvider,
 		Identity:              identity,
 		CidPool:               cidPool,
 		RuntimeAttestInterval: attestInterval,

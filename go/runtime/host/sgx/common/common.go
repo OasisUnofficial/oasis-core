@@ -24,16 +24,23 @@ import (
 	"github.com/oasisprotocol/oasis-core/go/runtime/host/sandbox"
 )
 
-// GetQuotePolicy fetches the quote policy for the specified RONL deployment.
-//
-// Returns nil if the policy is not available.
-func GetQuotePolicy(
-	ctx context.Context,
-	runtimeID common.Namespace,
-	version version.Version,
-	cs consensus.Service,
-) (*sgxQuote.Policy, error) {
-	rt, err := cs.Registry().GetRuntime(ctx, &registry.GetRuntimeQuery{
+// QuotePolicyProvider provides quote policies.
+type QuotePolicyProvider interface {
+	// Get fetches the quote policy for the specified RONL deployment.
+	Get(ctx context.Context, runtimeID common.Namespace, version version.Version) (*sgxQuote.Policy, error)
+}
+
+type quotePolicyProvider struct {
+	cs consensus.Service
+}
+
+// NewQuotePolicyProvider returns a QuotePolicyProvider backed by the consensus.
+func NewQuotePolicyProvider(cs consensus.Service) QuotePolicyProvider {
+	return &quotePolicyProvider{cs: cs}
+}
+
+func (p *quotePolicyProvider) Get(ctx context.Context, runtimeID common.Namespace, version version.Version) (*sgxQuote.Policy, error) {
+	rt, err := p.cs.Registry().GetRuntime(ctx, &registry.GetRuntimeQuery{
 		Height:           consensus.HeightLatest,
 		ID:               runtimeID,
 		IncludeSuspended: true,

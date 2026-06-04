@@ -57,7 +57,7 @@ func (ec *teeStateECDSA) Update(ctx context.Context, sp *sgxProvisioner, conn pr
 	var pcsQuotePolicy *pcs.QuotePolicy
 	switch ec.cfg.Component.Kind {
 	case component.RONL:
-		quotePolicy, err := sgxCommon.GetQuotePolicy(ctx, ec.cfg.ID, ec.cfg.Component.Version, sp.consensus)
+		quotePolicy, err := sp.policyProvider.Get(ctx, ec.cfg.ID, ec.cfg.Component.Version)
 		if err != nil {
 			return nil, fmt.Errorf("failed to fetch RONL quote policy: %w", err)
 		}
