@@ -187,7 +187,7 @@ func (cs *CommissionSchedule) validateNondegenerate(rules *CommissionScheduleRul
 			return fmt.Errorf("bound step %d maximum rate '%v' less than minimum allowed commission rate: '%v'", i, step.RateMax, rules.MinCommissionRate)
 		}
 		if step.RateMin.Cmp(&rules.MinCommissionRate) < 0 {
-			return fmt.Errorf("bound step %d minimum rate '%v' less than minimum allowed commission rate: '%v'", i, step.RateMax, rules.MinCommissionRate)
+			return fmt.Errorf("bound step %d minimum rate '%v' less than minimum allowed commission rate: '%v'", i, step.RateMin, rules.MinCommissionRate)
 		}
 	}
 
