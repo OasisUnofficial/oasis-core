@@ -10,8 +10,6 @@ import (
 	"github.com/oasisprotocol/oasis-core/go/config"
 	consensus "github.com/oasisprotocol/oasis-core/go/consensus/api"
 	genesisAPI "github.com/oasisprotocol/oasis-core/go/genesis/api"
-	"github.com/oasisprotocol/oasis-core/go/ias"
-	iasAPI "github.com/oasisprotocol/oasis-core/go/ias/api"
 	cmdFlags "github.com/oasisprotocol/oasis-core/go/oasis-node/cmd/common/flags"
 	"github.com/oasisprotocol/oasis-core/go/runtime/bundle/component"
 	rtConfig "github.com/oasisprotocol/oasis-core/go/runtime/config"
@@ -37,12 +35,6 @@ func New(
 	consensus consensus.Service,
 	genesisDoc *genesisAPI.Document,
 ) (runtimeHost.Provisioner, error) {
-	// Initialize the IAS proxy client.
-	ias, err := ias.New(identity)
-	if err != nil {
-		return nil, fmt.Errorf("failed to initialize IAS proxy client: %w", err)
-	}
-
 	// Configure host environment information.
 	hostInfo, err := createHostInfo(genesisDoc)
 	if err != nil {
@@ -56,7 +48,7 @@ func New(
 	}
 
 	// Create runtime provisioner.
-	return createProvisioner(dataDir, commonStore, identity, consensus, hostInfo, ias, qs)
+	return createProvisioner(dataDir, commonStore, identity, consensus, hostInfo, qs)
 }
 
 func createHostInfo(genesisDoc *genesisAPI.Document) (*hostProtocol.HostInfo, error) {
@@ -86,7 +78,6 @@ func createProvisioner(
 	identity *identity.Identity,
 	consensus consensus.Service,
 	hostInfo *hostProtocol.HostInfo,
-	ias []iasAPI.Endpoint,
 	qs pcs.QuoteService,
 ) (runtimeHost.Provisioner, error) {
 	var err error
@@ -152,7 +143,6 @@ func createProvisioner(
 			HostInfo:              hostInfo,
 			CommonStore:           commonStore,
 			LoaderPath:            sgxLoader,
-			IAS:                   ias,
 			PCS:                   qs,
 			Consensus:             consensus,
 			Identity:              identity,
