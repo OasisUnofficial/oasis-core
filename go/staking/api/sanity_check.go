@@ -64,6 +64,11 @@ func (p *ConsensusParameters) SanityCheck() error {
 		prevUntil = step.Until
 	}
 
+	// Signing reward threshold must be a valid fraction between 0 and 1.
+	if p.SigningRewardThresholdNumerator > p.SigningRewardThresholdDenominator {
+		return fmt.Errorf("signing reward threshold numerator must be less than or equal to denominator")
+	}
+
 	return nil
 }
 
