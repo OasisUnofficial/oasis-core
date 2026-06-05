@@ -17,8 +17,6 @@ import (
 	"github.com/oasisprotocol/oasis-core/go/common/sgx/pcs"
 	sgxQuote "github.com/oasisprotocol/oasis-core/go/common/sgx/quote"
 	"github.com/oasisprotocol/oasis-core/go/common/version"
-	consensus "github.com/oasisprotocol/oasis-core/go/consensus/api"
-	registry "github.com/oasisprotocol/oasis-core/go/registry/api"
 	"github.com/oasisprotocol/oasis-core/go/runtime/host"
 	"github.com/oasisprotocol/oasis-core/go/runtime/host/protocol"
 	"github.com/oasisprotocol/oasis-core/go/runtime/host/sandbox"
@@ -26,36 +24,8 @@ import (
 
 // QuotePolicyProvider provides quote policies.
 type QuotePolicyProvider interface {
-	// Get fetches the quote policy for the specified RONL deployment.
+	// Get returns the quote policy for the specified RONL deployment.
 	Get(ctx context.Context, runtimeID common.Namespace, version version.Version) (*sgxQuote.Policy, error)
-}
-
-type quotePolicyProvider struct {
-	cs consensus.Service
-}
-
-// NewQuotePolicyProvider returns a QuotePolicyProvider backed by the consensus.
-func NewQuotePolicyProvider(cs consensus.Service) QuotePolicyProvider {
-	return &quotePolicyProvider{cs: cs}
-}
-
-func (p *quotePolicyProvider) Get(ctx context.Context, runtimeID common.Namespace, version version.Version) (*sgxQuote.Policy, error) {
-	rt, err := p.cs.Registry().GetRuntime(ctx, &registry.GetRuntimeQuery{
-		Height:           consensus.HeightLatest,
-		ID:               runtimeID,
-		IncludeSuspended: true,
-	})
-	if err != nil {
-		return nil, fmt.Errorf("failed to query runtime descriptor: %w", err)
-	}
-	if d := rt.DeploymentForVersion(version); d != nil {
-		var sc node.SGXConstraints
-		if err = cbor.Unmarshal(d.TEE, &sc); err != nil {
-			return nil, fmt.Errorf("malformed runtime SGX constraints: %w", err)
-		}
-		return sc.Policy, nil
-	}
-	return nil, nil
 }
 
 // EndorseCapabilityTEE endorses the given CapabilityTEE and submits the signed endorsement to the
