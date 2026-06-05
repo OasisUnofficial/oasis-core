@@ -1235,17 +1235,21 @@ type ConsensusParameters struct {
 	// 1 token = 10**TokenValueExponent base units.
 	TokenValueExponent uint8 `json:"token_value_exponent,omitempty"`
 
-	Thresholds                        map[ThresholdKind]quantity.Quantity `json:"thresholds,omitempty"`
-	DebondingInterval                 beacon.EpochTime                    `json:"debonding_interval,omitempty"`
-	RewardSchedule                    []RewardStep                        `json:"reward_schedule,omitempty"`
-	SigningRewardThresholdNumerator   uint64                              `json:"signing_reward_threshold_numerator,omitempty"`
-	SigningRewardThresholdDenominator uint64                              `json:"signing_reward_threshold_denominator,omitempty"`
-	CommissionScheduleRules           CommissionScheduleRules             `json:"commission_schedule_rules,omitempty"`
-	Slashing                          map[SlashReason]Slash               `json:"slashing,omitempty"`
-	GasCosts                          transaction.Costs                   `json:"gas_costs,omitempty"`
-	MinDelegationAmount               quantity.Quantity                   `json:"min_delegation"`
-	MinTransferAmount                 quantity.Quantity                   `json:"min_transfer"`
-	MinTransactBalance                quantity.Quantity                   `json:"min_transact_balance"`
+	Thresholds        map[ThresholdKind]quantity.Quantity `json:"thresholds,omitempty"`
+	DebondingInterval beacon.EpochTime                    `json:"debonding_interval,omitempty"`
+	RewardSchedule    []RewardStep                        `json:"reward_schedule,omitempty"`
+	// SigningRewardThresholdNumerator is the numerator of the threshold used for
+	// block signing rewards.
+	SigningRewardThresholdNumerator uint64 `json:"signing_reward_threshold_numerator,omitempty"`
+	// SigningRewardThresholdDenominator is the denominator of the threshold used for
+	// block signing rewards. If the denominator is zero, the threshold is treated as zero.
+	SigningRewardThresholdDenominator uint64                  `json:"signing_reward_threshold_denominator,omitempty"`
+	CommissionScheduleRules           CommissionScheduleRules `json:"commission_schedule_rules,omitempty"`
+	Slashing                          map[SlashReason]Slash   `json:"slashing,omitempty"`
+	GasCosts                          transaction.Costs       `json:"gas_costs,omitempty"`
+	MinDelegationAmount               quantity.Quantity       `json:"min_delegation"`
+	MinTransferAmount                 quantity.Quantity       `json:"min_transfer"`
+	MinTransactBalance                quantity.Quantity       `json:"min_transact_balance"`
 
 	DisableTransfers       bool             `json:"disable_transfers,omitempty"`
 	DisableDelegation      bool             `json:"disable_delegation,omitempty"`

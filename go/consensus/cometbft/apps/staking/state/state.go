@@ -555,15 +555,16 @@ func (es *EpochSigning) Update(signingEntities []signature.PublicKey) error {
 
 func (es *EpochSigning) EligibleEntities(thresholdNumerator, thresholdDenominator uint64) ([]signature.PublicKey, error) {
 	var eligibleEntities []signature.PublicKey
-	if es.Total > math.MaxUint64/thresholdNumerator {
+	if thresholdNumerator != 0 && es.Total > math.MaxUint64/thresholdNumerator {
 		return nil, fmt.Errorf("overflow in total blocks, total=%d", es.Total)
 	}
 	thresholdPremultiplied := es.Total * thresholdNumerator
 	for entityID, count := range es.ByEntity {
-		if count > math.MaxUint64/thresholdDenominator {
+		if thresholdDenominator != 0 && count > math.MaxUint64/thresholdDenominator {
 			return nil, fmt.Errorf("entity %s: overflow in threshold comparison, count=%d", entityID, count)
 		}
-		if count*thresholdDenominator < thresholdPremultiplied {
+		entityThreshold := count * thresholdDenominator
+		if entityThreshold < thresholdPremultiplied {
 			continue
 		}
 		eligibleEntities = append(eligibleEntities, entityID)
