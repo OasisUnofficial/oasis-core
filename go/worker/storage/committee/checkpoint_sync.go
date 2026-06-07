@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/oasisprotocol/oasis-core/go/p2p/rpc"
+	"github.com/oasisprotocol/oasis-core/go/roothash/api/block"
 	storageApi "github.com/oasisprotocol/oasis-core/go/storage/api"
 	"github.com/oasisprotocol/oasis-core/go/storage/mkvs/checkpoint"
 	"github.com/oasisprotocol/oasis-core/go/worker/storage/p2p/checkpointsync"
@@ -367,40 +368,30 @@ func sortCheckpoints(s []*checkpointsync.Checkpoint) {
 	})
 }
 
-func (w *Worker) checkCheckpointUsable(ctx context.Context, cp *checkpointsync.Checkpoint, remainingMask outstandingMask, genesisRound uint64) bool {
-	namespace := w.commonNode.Runtime.ID()
-	if !namespace.Equal(&cp.Root.Namespace) {
-		// Not for the right runtime.
-		return false
-	}
-	if cp.Root.Version == genesisRound && cp.Root.Type == storageApi.RootTypeIO {
-		// Never fetch i/o root for genesis round.
-		return false
+func validateCheckpoint(cp *checkpointsync.Checkpoint, blk *block.Block) error {
+	if !blk.Header.Namespace.Equal((&cp.Root.Namespace)) {
+		return fmt.Errorf("namespace mismatch: got %s, want %s", cp.Root.Namespace, blk.Header.Namespace)
 	}
 
-	blk, err := w.commonNode.Runtime.History().GetCommittedBlock(ctx, cp.Root.Version)
-	if err != nil {
-		w.logger.Error("can't get block information for checkpoint, skipping", "err", err, "root", cp.Root)
-		return false
-	}
-	_, lastIORoot, lastStateRoot := w.GetLastSynced()
-	lastVersions := map[storageApi.RootType]uint64{
-		storageApi.RootTypeIO:    lastIORoot.Version,
-		storageApi.RootTypeState: lastStateRoot.Version,
-	}
-	if namespace.Equal(&blk.Header.Namespace) {
-		for _, root := range blk.Header.StorageRoots() {
-			if cp.Root.Type == root.Type && root.Hash.Equal(&cp.Root.Hash) {
-				// Do we already have this root?
-				if lastVersions[cp.Root.Type] < cp.Root.Version && remainingMask.contains(cp.Root.Type) {
-					return true
-				}
-				return false
-			}
+	for _, root := range blk.Header.StorageRoots() {
+		if cp.Root.Equal(&root) {
+			return nil
 		}
 	}
-	w.logger.Info("checkpoint for unknown root skipped", "root", cp.Root)
-	return false
+	return fmt.Errorf("checkpoint metadata with unexpected root %s", cp.Root)
+}
+
+func (w *Worker) checkCheckpointUsable(cp *checkpointsync.Checkpoint, remainingMask outstandingMask, genesisRound uint64) bool {
+	_, lastIORoot, lastStateRoot := w.GetLastSynced()
+	var lastVersion uint64
+	switch cp.Root.Type {
+	case storageApi.RootTypeIO:
+		lastVersion = lastIORoot.Version
+	case storageApi.RootTypeState:
+		lastVersion = lastStateRoot.Version
+	}
+
+	return lastVersion < cp.Root.Version && remainingMask.contains(cp.Root.Type)
 }
 
 func (w *Worker) syncCheckpoints(ctx context.Context, genesisRound uint64, wantOnlyGenesis bool) (*blockSummary, error) {
@@ -447,7 +438,32 @@ func (w *Worker) syncCheckpoints(ctx context.Context, genesisRound uint64, wantO
 
 	for _, check := range cps {
 
-		if check.Root.Version < genesisRound || !w.checkCheckpointUsable(ctx, check, remainingRoots, genesisRound) {
+		if check.Root.Version < genesisRound {
+			continue
+		}
+
+		if check.Root.Version == genesisRound && check.Root.Type == storageApi.RootTypeIO {
+			// Genesis round has no i/o root. Some peers may still advertise one after
+			// dump-restore upgrades; ignore it without penalizing.
+			continue
+		}
+
+		blk, err := w.commonNode.Runtime.History().GetCommittedBlock(ctx, check.Root.Version)
+		if err != nil {
+			w.logger.Error("can't get block information for checkpoint, skipping", "err", err, "root", check.Root)
+			continue
+		}
+
+		if err := validateCheckpoint(check, blk); err != nil {
+			w.logger.Error("invalid checkpoint received, penalizing bad peers", "checkpoint", check)
+			for _, peer := range check.Peers {
+				peer.RecordBadPeer()
+			}
+			continue
+		}
+
+		if !w.checkCheckpointUsable(check, remainingRoots, genesisRound) {
+			w.logger.Info("checkpoint not usable", "checkpoint", check)
 			continue
 		}
 
