@@ -3,6 +3,7 @@ package checkpoint
 
 import (
 	"context"
+	"fmt"
 	"io"
 
 	"github.com/oasisprotocol/oasis-core/go/common"
@@ -137,6 +138,20 @@ type Metadata struct {
 	Version uint16      `json:"version"`
 	Root    node.Root   `json:"root"`
 	Chunks  []hash.Hash `json:"chunks"`
+}
+
+// Validate checks that the metadata is structurally valid.
+func (m *Metadata) Validate() error {
+	if m == nil {
+		return fmt.Errorf("nil metadata")
+	}
+	if m.Root.Type == node.RootTypeInvalid || m.Root.Type > node.RootTypeMax {
+		return fmt.Errorf("invalid root type: %s", m.Root.Type)
+	}
+	if len(m.Chunks) == 0 {
+		return fmt.Errorf("zero chunks")
+	}
+	return nil
 }
 
 // EncodedHash returns the encoded cryptographic hash of the checkpoint metadata.

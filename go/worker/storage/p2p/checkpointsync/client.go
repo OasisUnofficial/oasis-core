@@ -2,6 +2,7 @@ package checkpointsync
 
 import (
 	"context"
+	"slices"
 
 	"github.com/libp2p/go-libp2p/core"
 
@@ -58,6 +59,11 @@ func (c *client) GetCheckpoints(ctx context.Context, request *GetCheckpointsRequ
 	cps := make(map[hash.Hash]*Checkpoint)
 	for i, peerRsp := range rsps {
 		peerCps := peerRsp.(*GetCheckpointsResponse).Checkpoints
+
+		if slices.ContainsFunc(peerCps, func(m *checkpoint.Metadata) bool { return m.Validate() != nil }) {
+			pfs[i].RecordBadPeer()
+			continue
+		}
 
 		for _, cpMeta := range peerCps {
 			h := cpMeta.EncodedHash()
