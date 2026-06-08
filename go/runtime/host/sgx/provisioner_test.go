@@ -9,11 +9,8 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/oasisprotocol/oasis-core/go/common/node"
-	cmnIAS "github.com/oasisprotocol/oasis-core/go/common/sgx/ias"
 	"github.com/oasisprotocol/oasis-core/go/common/version"
 	cmt "github.com/oasisprotocol/oasis-core/go/consensus/cometbft/api"
-	"github.com/oasisprotocol/oasis-core/go/ias/api"
-	iasHttp "github.com/oasisprotocol/oasis-core/go/ias/http"
 	"github.com/oasisprotocol/oasis-core/go/runtime/bundle"
 	"github.com/oasisprotocol/oasis-core/go/runtime/host"
 	"github.com/oasisprotocol/oasis-core/go/runtime/host/protocol"
@@ -55,13 +52,6 @@ func TestProvisionerSGX(t *testing.T) {
 	err = bnd.WriteExploded(tmpDir)
 	require.NoError(err, "bnd.WriteExploded")
 
-	ias, err := iasHttp.New(&iasHttp.Config{
-		SPID:               "9b3085a55a5863f7cc66b380dcad0082",
-		QuoteSignatureType: cmnIAS.SignatureUnlinkable,
-		DebugIsMock:        true,
-	})
-	require.NoError(err, "iasHttp.New")
-
 	extraTests := []tests.TestCase{
 		{
 			Name: "AttestationWorker",
@@ -88,7 +78,6 @@ func TestProvisionerSGX(t *testing.T) {
 						ConsensusProtocolVersion: version.Versions.ConsensusProtocol,
 					},
 					LoaderPath:            envRuntimeLoaderPath,
-					IAS:                   []api.Endpoint{ias},
 					RuntimeAttestInterval: 2 * time.Second,
 					InsecureNoSandbox:     true,
 					SandboxBinaryPath:     bwrapPath,
@@ -105,7 +94,6 @@ func TestProvisionerSGX(t *testing.T) {
 					},
 					LoaderPath:            envRuntimeLoaderPath,
 					RuntimeAttestInterval: 2 * time.Second,
-					IAS:                   []api.Endpoint{ias},
 					SandboxBinaryPath:     bwrapPath,
 				})
 			}, extraTests)

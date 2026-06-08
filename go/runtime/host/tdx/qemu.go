@@ -20,7 +20,6 @@ import (
 	"github.com/oasisprotocol/oasis-core/go/common/sgx/pcs"
 	sgxQuote "github.com/oasisprotocol/oasis-core/go/common/sgx/quote"
 	"github.com/oasisprotocol/oasis-core/go/config"
-	consensus "github.com/oasisprotocol/oasis-core/go/consensus/api"
 	"github.com/oasisprotocol/oasis-core/go/runtime/bundle/component"
 	"github.com/oasisprotocol/oasis-core/go/runtime/host"
 	"github.com/oasisprotocol/oasis-core/go/runtime/host/protocol"
@@ -56,8 +55,8 @@ type QemuConfig struct {
 
 	// PCS is the Intel Provisioning Certification Service quote service.
 	PCS pcs.QuoteService
-	// Consensus is the consensus layer backend.
-	Consensus consensus.Service
+	// QuotePolicy provides the quote policy for RONL deployments.
+	QuotePolicy sgxCommon.QuotePolicyProvider
 	// Identity is the node identity.
 	Identity *identity.Identity
 
@@ -78,11 +77,11 @@ type QemuExtraConfig struct {
 type qemuProvisioner struct {
 	cfg QemuConfig
 
-	sandbox   host.Provisioner
-	pcs       pcs.QuoteService
-	consensus consensus.Service
-	identity  *identity.Identity
-	cidPool   *CidPool
+	sandbox     host.Provisioner
+	pcs         pcs.QuoteService
+	quotePolicy sgxCommon.QuotePolicyProvider
+	identity    *identity.Identity
+	cidPool     *CidPool
 
 	logger *logging.Logger
 }
@@ -97,12 +96,12 @@ func NewQemuProvisioner(cfg QemuConfig) (host.Provisioner, error) {
 	sgxCommon.InitMetrics()
 
 	p := &qemuProvisioner{
-		cfg:       cfg,
-		pcs:       cfg.PCS,
-		consensus: cfg.Consensus,
-		identity:  cfg.Identity,
-		cidPool:   cfg.CidPool,
-		logger:    logging.GetLogger("runtime/host/tdx/qemu"),
+		cfg:         cfg,
+		pcs:         cfg.PCS,
+		quotePolicy: cfg.QuotePolicy,
+		identity:    cfg.Identity,
+		cidPool:     cfg.CidPool,
+		logger:      logging.GetLogger("runtime/host/tdx/qemu"),
 	}
 	sp, err := sandbox.NewProvisioner(sandbox.Config{
 		Connector:         newVsockConnector,
@@ -434,8 +433,18 @@ func (p *qemuProvisioner) updateCapabilityTEE(ctx context.Context, hp *sandbox.H
 	rekPub := rspRep.RuntimeCapabilityTEERakReportResponse.RekPub
 	rawQuote := rspRep.RuntimeCapabilityTEERakReportResponse.Report
 
-	// Prepare the quote policy for local verification. In case a policy is not available or it
-	// indicates that TDX is not supported, use the fallback policy so we can provision something.
+	var quotePolicy *sgxQuote.Policy
+	switch hp.Config.Component.Kind {
+	case component.RONL:
+		quotePolicy, err = p.quotePolicy.Get(ctx, hp.Config.ID, hp.Config.Component.Version)
+		if err != nil {
+			return nil, fmt.Errorf("failed to fetch RONL quote policy: %w", err)
+		}
+	default:
+		// No policy, use fallback.
+	}
+
+	// Use the fallback policy for ROFL components and RONL components with no TDX policy so that provisioning can proceed.
 	fallbackPolicy := &sgxQuote.Policy{
 		PCS: &pcs.QuotePolicy{
 			TCBValidityPeriod:          30,
@@ -443,9 +452,8 @@ func (p *qemuProvisioner) updateCapabilityTEE(ctx context.Context, hp *sandbox.H
 			TDX:                        &pcs.TdxQuotePolicy{},
 		},
 	}
-	quotePolicy, err := sgxCommon.GetQuotePolicy(ctx, hp.Config, p.consensus, fallbackPolicy)
-	if err != nil {
-		return nil, err
+	if quotePolicy == nil {
+		quotePolicy = fallbackPolicy
 	}
 	if quotePolicy.PCS == nil {
 		quotePolicy.PCS = fallbackPolicy.PCS

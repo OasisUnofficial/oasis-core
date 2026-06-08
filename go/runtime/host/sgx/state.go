@@ -30,33 +30,18 @@ func (ts *teeState) init(ctx context.Context, sp *sgxProvisioner) ([]byte, error
 		return nil, fmt.Errorf("already initialized")
 	}
 
-	var (
-		targetInfo []byte
-		err        error
-	)
-
-	// When insecure mock SGX is enabled, use mock implementation.
+	var impl teeStateImpl
 	if ts.insecureMock {
-		ts.impl = &teeStateMock{}
-		return ts.impl.Init(ctx, sp, ts.cfg)
-	}
-
-	// Try ECDSA first. If it fails, try EPID.
-	implECDSA := &teeStateECDSA{}
-	if targetInfo, err = implECDSA.Init(ctx, sp, ts.cfg); err != nil {
-		sp.logger.Debug("ECDSA attestation initialization failed, trying EPID",
-			"err", err,
-		)
-
-		implEPID := &teeStateEPID{}
-		if targetInfo, err = implEPID.Init(ctx, sp, ts.cfg); err != nil {
-			return nil, err
-		}
-		ts.impl = implEPID
+		impl = &teeStateMock{}
 	} else {
-		ts.impl = implECDSA
+		impl = &teeStateECDSA{}
 	}
 
+	targetInfo, err := impl.Init(ctx, sp, ts.cfg)
+	if err != nil {
+		return nil, fmt.Errorf("initialization failed: %w", err)
+	}
+	ts.impl = impl
 	return targetInfo, nil
 }
 

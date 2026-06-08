@@ -8,6 +8,7 @@ import (
 
 	"github.com/cenkalti/backoff/v4"
 
+	"github.com/oasisprotocol/oasis-core/go/common"
 	"github.com/oasisprotocol/oasis-core/go/common/cbor"
 	"github.com/oasisprotocol/oasis-core/go/common/crypto/signature"
 	"github.com/oasisprotocol/oasis-core/go/common/identity"
@@ -15,49 +16,16 @@ import (
 	"github.com/oasisprotocol/oasis-core/go/common/node"
 	"github.com/oasisprotocol/oasis-core/go/common/sgx/pcs"
 	sgxQuote "github.com/oasisprotocol/oasis-core/go/common/sgx/quote"
-	consensus "github.com/oasisprotocol/oasis-core/go/consensus/api"
-	registry "github.com/oasisprotocol/oasis-core/go/registry/api"
-	"github.com/oasisprotocol/oasis-core/go/runtime/bundle/component"
+	"github.com/oasisprotocol/oasis-core/go/common/version"
 	"github.com/oasisprotocol/oasis-core/go/runtime/host"
 	"github.com/oasisprotocol/oasis-core/go/runtime/host/protocol"
 	"github.com/oasisprotocol/oasis-core/go/runtime/host/sandbox"
 )
 
-// GetQuotePolicy fetches the quote policy for the given component. In case the policy is
-// not available, return the fallback policy.
-func GetQuotePolicy(
-	ctx context.Context,
-	cfg *host.Config,
-	cs consensus.Service,
-	fallbackPolicy *sgxQuote.Policy,
-) (*sgxQuote.Policy, error) {
-	switch cfg.Component.Kind {
-	case component.RONL:
-		// Load RONL policy from the consensus layer.
-		rt, err := cs.Registry().GetRuntime(ctx, &registry.GetRuntimeQuery{
-			Height:           consensus.HeightLatest,
-			ID:               cfg.ID,
-			IncludeSuspended: true,
-		})
-		if err != nil {
-			return nil, fmt.Errorf("failed to query runtime descriptor: %w", err)
-		}
-		if d := rt.DeploymentForVersion(cfg.Component.Version); d != nil {
-			var sc node.SGXConstraints
-			if err = cbor.Unmarshal(d.TEE, &sc); err != nil {
-				return nil, fmt.Errorf("malformed runtime SGX constraints: %w", err)
-			}
-
-			return sc.Policy, nil
-		}
-		return fallbackPolicy, nil
-	case component.ROFL:
-		// Always use fallback policy for ROFL components.
-		return fallbackPolicy, nil
-	default:
-		// No policy.
-		return fallbackPolicy, nil
-	}
+// QuotePolicyProvider provides quote policies.
+type QuotePolicyProvider interface {
+	// Get returns the quote policy for the specified RONL deployment.
+	Get(ctx context.Context, runtimeID common.Namespace, version version.Version) (*sgxQuote.Policy, error)
 }
 
 // EndorseCapabilityTEE endorses the given CapabilityTEE and submits the signed endorsement to the
