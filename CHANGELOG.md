@@ -12,6 +12,130 @@ The format is inspired by [Keep a Changelog].
 
 <!-- TOWNCRIER -->
 
+## 26.1 (2026-06-08)
+
+| Protocol          | Version   |
+|:------------------|:---------:|
+| Consensus         | 7.0.0     |
+| Runtime Host      | 5.1.0     |
+| Runtime Committee | 5.0.0     |
+
+### Configuration Changes
+
+- oasis-node/config: Add explicit observer mode
+  ([#6488](https://github.com/oasisprotocol/oasis-core/issues/6488))
+
+- go/config: Add explicit local storage config
+  ([#6488](https://github.com/oasisprotocol/oasis-core/issues/6488))
+
+  Explicit `config.Config.Consensus.LocalStorage` (default `true`) was added.
+  When set to `false`, remote authenticated storage is used and verified
+  by the node's light client.
+
+  Mode `stateless-client` no longer exists. It should be instead configured by
+  `config.Config.Mode: client` and
+  `config.Config.Consensus.LocalStorage: false`.
+
+### Features
+
+- Add new `oasis_worker_storage_prune_latency` metric
+  ([#6494](https://github.com/oasisprotocol/oasis-core/issues/6494))
+
+- go/oasis-node/cmd/storage: Release offline compaction command
+  ([#6519](https://github.com/oasisprotocol/oasis-core/issues/6519))
+
+  Command `storage compact-experimental` has been released as
+  `storage compact` and now in addition to consensus databases
+  also compacts runtime databases.
+
+- go/oasis-node/cmd/storage: Release offline pruning command
+  ([#6519](https://github.com/oasisprotocol/oasis-core/issues/6519))
+
+  Command `storage prune-experimental` has been released as
+  `storage prune` and now in addition to consensus databases
+  also prunes runtime databases.
+
+### Bug Fixes
+
+- go/storage/mkvs/db/pathbadger: Fix pruning performance
+  ([#6334](https://github.com/oasisprotocol/oasis-core/issues/6334))
+
+- go/runtime/history: Always broadcast first synced round
+  ([#6476](https://github.com/oasisprotocol/oasis-core/issues/6476))
+
+- go/p2p/discovery/bootstrap: Ignore private IPs
+  ([#6487](https://github.com/oasisprotocol/oasis-core/issues/6487))
+
+- go/consensus/cometbft/apps/registry: Remove owner on runtime update
+  ([#6509](https://github.com/oasisprotocol/oasis-core/issues/6509))
+
+- go/consensus/cometbft/apps/roothash: Validate runtime ID of messages
+  ([#6510](https://github.com/oasisprotocol/oasis-core/issues/6510))
+
+- go/oasis-node/cmd/common: Fix is node running helper
+  ([#6520](https://github.com/oasisprotocol/oasis-core/issues/6520))
+
+  Now the helper tries to dial the node socket to check
+  whether the node is running.
+
+- go/consensus/cometbft/apps/governance: Ignore nodes when runtime votes
+  ([#6523](https://github.com/oasisprotocol/oasis-core/issues/6523))
+
+- go/consensus/cometbft/stateless: Fix transaction with proofs methods
+  ([#6527](https://github.com/oasisprotocol/oasis-core/issues/6527))
+
+  Methods SubmitTxWithProof and GetTransactionsWithProofs were fixed.
+
+- go/worker/storage/p2p: Penalize bad checkpoint sync peers
+  ([#6534](https://github.com/oasisprotocol/oasis-core/issues/6534))
+
+### Internal Changes
+
+- go: Bump google.golang.org/grpc to 1.79.3
+  ([#6477](https://github.com/oasisprotocol/oasis-core/issues/6477))
+
+- go: Bump go-libp2p to v0.48.0
+  ([#6477](https://github.com/oasisprotocol/oasis-core/issues/6477))
+
+- go: Bump golang.org/x/net to 0.52.0
+  ([#6477](https://github.com/oasisprotocol/oasis-core/issues/6477))
+
+- rust: Add RUSTSEC-2026-0049 to audit.toml
+  ([#6479](https://github.com/oasisprotocol/oasis-core/issues/6479))
+
+- rust: Bump mbedtls to 0.13.5
+  ([#6490](https://github.com/oasisprotocol/oasis-core/issues/6490))
+
+- rust: Bump rustls-webpki to 0.103.12
+  ([#6501](https://github.com/oasisprotocol/oasis-core/issues/6501))
+
+- go: Bump CometBFT to 0.37.18-oasis2
+  ([#6508](https://github.com/oasisprotocol/oasis-core/issues/6508))
+
+- rust: Add RUSTSEC-2026-0104 to audit.toml
+  ([#6513](https://github.com/oasisprotocol/oasis-core/issues/6513))
+
+- go: Bump cometbft-db to 1.0.4
+  ([#6524](https://github.com/oasisprotocol/oasis-core/issues/6524))
+
+- go: Bump golang.org/x/net to 0.55.0
+  ([#6536](https://github.com/oasisprotocol/oasis-core/issues/6536))
+
+- go: Bump golang.org/x/crypto to v0.52.0
+  ([#6538](https://github.com/oasisprotocol/oasis-core/issues/6538))
+
+- go: Bump golangci-lint to v2.12.2
+  ([#6540](https://github.com/oasisprotocol/oasis-core/issues/6540))
+
+- go: Bump Go to 1.26.3
+  ([#6540](https://github.com/oasisprotocol/oasis-core/issues/6540))
+
+- go: Bump CometBFT to 0.37.18-oasis3
+  ([#6542](https://github.com/oasisprotocol/oasis-core/issues/6542))
+
+- go: Bump github.com/quic-go/quic-go to v0.59.1
+  ([#6544](https://github.com/oasisprotocol/oasis-core/issues/6544))
+
 ## 26.0 (2026-03-04)
 
 | Protocol          | Version   |
