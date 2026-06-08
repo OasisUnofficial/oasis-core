@@ -6,7 +6,6 @@ import (
 	"io"
 
 	"github.com/oasisprotocol/oasis-core/go/common"
-	"github.com/oasisprotocol/oasis-core/go/common/crypto/hash"
 	"github.com/oasisprotocol/oasis-core/go/common/errors"
 	"github.com/oasisprotocol/oasis-core/go/storage/mkvs/node"
 )
@@ -122,38 +121,4 @@ func NewCreateRestorer(creator Creator, restorer Restorer) CreateRestorer {
 		Creator:  creator,
 		Restorer: restorer,
 	}
-}
-
-// ChunkMetadata is chunk metadata.
-type ChunkMetadata struct {
-	Version uint16    `json:"version"`
-	Root    node.Root `json:"root"`
-	Index   uint64    `json:"index"`
-	Digest  hash.Hash `json:"digest"`
-}
-
-// Metadata is checkpoint metadata.
-type Metadata struct {
-	Version uint16      `json:"version"`
-	Root    node.Root   `json:"root"`
-	Chunks  []hash.Hash `json:"chunks"`
-}
-
-// EncodedHash returns the encoded cryptographic hash of the checkpoint metadata.
-func (m *Metadata) EncodedHash() hash.Hash {
-	return hash.NewFrom(m)
-}
-
-// GetChunkMetadata returns the chunk metadata for the corresponding chunk.
-func (m Metadata) GetChunkMetadata(idx uint64) (*ChunkMetadata, error) {
-	if idx >= uint64(len(m.Chunks)) {
-		return nil, ErrChunkNotFound
-	}
-
-	return &ChunkMetadata{
-		Version: m.Version,
-		Root:    m.Root,
-		Index:   idx,
-		Digest:  m.Chunks[int(idx)],
-	}, nil
 }

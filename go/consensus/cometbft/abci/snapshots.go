@@ -79,6 +79,12 @@ func (mux *abciMux) OfferSnapshot(req types.RequestOfferSnapshot) types.Response
 		)
 		return types.ResponseOfferSnapshot{Result: types.ResponseOfferSnapshot_REJECT}
 	}
+	if err := cp.Validate(); err != nil {
+		mux.logger.Warn("received snapshot with invalid metadata",
+			"err", err,
+		)
+		return types.ResponseOfferSnapshot{Result: types.ResponseOfferSnapshot_REJECT}
+	}
 
 	// Number of chunks must match.
 	if int(req.Snapshot.Chunks) != len(cp.Chunks) {
