@@ -237,7 +237,7 @@ where
     type Error = Error;
 
     fn try_from(encoded: &EncodedSecretShare) -> Result<Self, Self::Error> {
-        let x = scalar_from_bytes(&encoded.x).ok_or(Error::IdentityDecodingFailed)?;
+        let x = scalar_from_bytes(&encoded.x).ok_or(Error::ScalarDecodingFailed)?;
         let p =
             Polynomial::from_bytes(&encoded.polynomial).ok_or(Error::PolynomialDecodingFailed)?;
         let share = SecretShare::new(x, p);
@@ -274,14 +274,17 @@ where
     type Error = Error;
 
     fn try_from(encoded: EncodedEncryptedPoint) -> Result<Self, Self::Error> {
-        let x = scalar_from_bytes(&encoded.x).ok_or(Error::IdentityDecodingFailed)?;
+        let x = scalar_from_bytes(&encoded.x).ok_or(Error::ScalarDecodingFailed)?;
 
         let mut repr: G::Repr = Default::default();
         let slice = &mut repr.as_mut()[..];
+        if slice.len() != encoded.z.len() {
+            return Err(Error::ScalarDecodingFailed);
+        }
         slice.copy_from_slice(&encoded.z);
 
         let z = match G::from_bytes(&repr).into() {
-            None => return Err(Error::IdentityDecodingFailed),
+            None => return Err(Error::ScalarDecodingFailed),
             Some(z) => z,
         };
 
