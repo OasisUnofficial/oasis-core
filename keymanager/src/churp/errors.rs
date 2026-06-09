@@ -25,8 +25,6 @@ pub enum Error {
     HandoffMismatch,
     #[error("handoff not found")]
     HandoffNotFound,
-    #[error("identity decoding failed")]
-    IdentityDecodingFailed,
     #[error("invalid bivariate polynomial")]
     InvalidBivariatePolynomial,
     #[error("invalid data")]
@@ -55,6 +53,8 @@ pub enum Error {
     PolynomialDecodingFailed,
     #[error("runtime mismatch")]
     RuntimeMismatch,
+    #[error("scalar decoding failed")]
+    ScalarDecodingFailed,
     #[error("shareholder mismatch")]
     ShareholderMismatch,
     #[error("shareholder not found")]
