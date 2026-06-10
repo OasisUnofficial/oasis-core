@@ -15,6 +15,9 @@ const (
 	MinimumProofVersion = 0
 	// LatestProofVersion is the latest supported proof version.
 	LatestProofVersion = 1
+
+	// maxProofDepth is the maximum depth of a proof.
+	maxProofDepth = 128
 )
 
 const (
@@ -313,7 +316,7 @@ func (pv *ProofVerifier) verifyProofOpts(ctx context.Context, root hash.Hash, pr
 	}
 
 	var res verifyResult
-	idx, rootPtr, err := pv.verifyProof(ctx, proof, 0, opts, &res)
+	idx, rootPtr, err := pv.verifyProof(ctx, proof, 0, 0, opts, &res)
 	if err != nil {
 		return nil, err
 	}
@@ -341,12 +344,15 @@ func (pv *ProofVerifier) verifyProofOpts(ctx context.Context, root hash.Hash, pr
 	return &res, nil
 }
 
-func (pv *ProofVerifier) verifyProof(ctx context.Context, proof *Proof, idx int, opts *verifyOpts, res *verifyResult) (int, *node.Pointer, error) {
+func (pv *ProofVerifier) verifyProof(ctx context.Context, proof *Proof, idx int, depth int, opts *verifyOpts, res *verifyResult) (int, *node.Pointer, error) {
 	if ctx.Err() != nil {
 		return -1, nil, ctx.Err()
 	}
 	if idx >= len(proof.Entries) {
 		return -1, nil, errors.New("verifier: malformed proof")
+	}
+	if depth > maxProofDepth {
+		return -1, nil, errors.New("verifier: max proof depth exceeded")
 	}
 
 	entry := proof.Entries[idx]
@@ -377,7 +383,7 @@ func (pv *ProofVerifier) verifyProof(ctx context.Context, proof *Proof, idx int,
 			case 1:
 				// In version 1, the leaf node is added separately, as a child.
 				// Leaf.
-				pos, nd.LeafNode, err = pv.verifyProof(ctx, proof, pos, opts, res)
+				pos, nd.LeafNode, err = pv.verifyProof(ctx, proof, pos, depth+1, opts, res)
 				if err != nil {
 					return -1, nil, err
 				}
@@ -387,12 +393,12 @@ func (pv *ProofVerifier) verifyProof(ctx context.Context, proof *Proof, idx int,
 			}
 
 			// Left.
-			pos, nd.Left, err = pv.verifyProof(ctx, proof, pos, opts, res)
+			pos, nd.Left, err = pv.verifyProof(ctx, proof, pos, depth+1, opts, res)
 			if err != nil {
 				return -1, nil, err
 			}
 			// Right.
-			pos, nd.Right, err = pv.verifyProof(ctx, proof, pos, opts, res)
+			pos, nd.Right, err = pv.verifyProof(ctx, proof, pos, depth+1, opts, res)
 			if err != nil {
 				return -1, nil, err
 			}
