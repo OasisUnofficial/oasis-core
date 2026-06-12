@@ -154,6 +154,21 @@ func (mux *abciMux) EstimateGas(caller signature.PublicKey, tx *transaction.Tran
 		return 0, consensus.ErrInvalidArgument
 	}
 
+	// Check transaction size against maximum allowed size. This is necessary
+	// to prevent DoS attacks by sending large transactions that consume
+	// a lot of resources during simulation.
+	params := mux.state.ConsensusParameters()
+	if params == nil {
+		return 0, consensus.ErrNoCommittedBlocks
+	}
+
+	if params.MaxTxSize > 0 {
+		rawTx := cbor.Marshal(tx)
+		if uint64(len(rawTx)) > params.MaxTxSize {
+			return 0, consensus.ErrOversizedTx
+		}
+	}
+
 	// Certain modules, in particular the beacon require InitChain or BeginBlock
 	// to have completed before initialization is complete.
 	if mux.state.LastHeight() == 0 {
